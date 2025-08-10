@@ -1,11 +1,13 @@
 import SwiftUI
-import AuthenticationServices
+import GoogleSignInSwift
 
 struct AuthenticationView: View {
     @StateObject private var authViewModel = AuthViewModel()
     @State private var showSignUp = false
     @State private var email = ""
     @State private var password = ""
+    @State private var phoneNumber = ""
+    @State private var showPhoneSignIn = false
     @State private var isLoading = false
     
     var body: some View {
@@ -29,20 +31,65 @@ struct AuthenticationView: View {
                 }
                 .padding(.bottom, 32)
                 
-                // Sign in with Apple
-                SignInWithAppleButton(
-                    onRequest: { request in
-                        request.requestedScopes = [.email, .fullName]
-                    },
-                    onCompletion: { result in
-                        Task {
-                            await authViewModel.signInWithApple()
+                // Google Options
+                VStack(spacing: 12) {
+                    if showSignUp {
+                        // Google Sign Up - Official Button
+                        GoogleSignInButton(scheme: .light, style: .wide, state: .normal) {
+                            Task {
+                                await authViewModel.signUpWithGoogle()
+                            }
                         }
+                        .frame(height: 50)
+                    } else {
+                        // Google Sign In - Official Button  
+                        GoogleSignInButton(scheme: .light, style: .wide, state: .normal) {
+                            Task {
+                                await authViewModel.signInWithGoogle()
+                            }
+                        }
+                        .frame(height: 50)
                     }
-                )
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .cornerRadius(25)
+                    
+                    // Phone Sign In
+                    Button {
+                        showPhoneSignIn.toggle()
+                    } label: {
+                        HStack {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(.white)
+                            Text("Continue with Phone")
+                                .foregroundColor(.white)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.green)
+                        .cornerRadius(25)
+                    }
+                    .disabled(authViewModel.isLoading)
+                }
+                
+                // Phone Number Input (conditional)
+                if showPhoneSignIn {
+                    VStack(spacing: 12) {
+                        TextField("Phone Number (e.g., +1234567890)", text: $phoneNumber)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .keyboardType(.phonePad)
+                        
+                        Button {
+                            Task {
+                                await authViewModel.signInWithPhone(phoneNumber: phoneNumber)
+                            }
+                        } label: {
+                            Text("Send Verification Code")
+                                .fontWeight(.semibold)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(phoneNumber.isEmpty || authViewModel.isLoading)
+                    }
+                    .transition(.slide)
+                }
                 
                 // Divider
                 HStack {
@@ -59,6 +106,8 @@ struct AuthenticationView: View {
                         .frame(height: 1)
                         .foregroundColor(.secondary.opacity(0.3))
                 }
+                
+                // Email/Password Login Section
                 
                 // Email/Password Form
                 VStack(spacing: 16) {

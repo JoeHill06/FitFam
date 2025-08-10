@@ -17,7 +17,7 @@ struct ContentView: View {
                     OnboardingView()
                         .environmentObject(authViewModel)
                 } else {
-                    MainTabView()
+                    WorkoutStatusView()
                         .environmentObject(authViewModel)
                 }
             } else {
