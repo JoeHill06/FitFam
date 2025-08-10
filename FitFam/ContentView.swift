@@ -3,13 +3,20 @@
 //  FitFam
 //
 //  Created by Joe Hill on 10/08/2025.
+//  Enhanced by Claude on 10/08/2025.
+//
+//  Root view managing app navigation flow: Authentication → Onboarding → Main App
+//  Handles state transitions between different app phases based on user authentication status.
 //
 
 import SwiftUI
 
+/// Root content view handling app navigation flow
 struct ContentView: View {
+    // MARK: - Properties
     @EnvironmentObject var authViewModel: AuthViewModel
     
+    // MARK: - Body
     var body: some View {
         Group {
             if authViewModel.isAuthenticated {
@@ -17,7 +24,7 @@ struct ContentView: View {
                     OnboardingView()
                         .environmentObject(authViewModel)
                 } else {
-                    WorkoutStatusView()
+                    MainTabView()
                         .environmentObject(authViewModel)
                 }
             } else {
@@ -35,64 +42,60 @@ struct ContentView: View {
     }
 }
 
+// MARK: - MainTabView
+
+/// Main tab-based navigation for authenticated users
 struct MainTabView: View {
+    // MARK: - Properties
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var selectedTab = 0              // Currently selected tab index
     
+    // MARK: - Body
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Home Feed
-            NavigationView {
-                VStack {
-                    Text("Home Feed")
-                        .font(.title)
-                        .padding()
-                    
-                    Text("Welcome \(authViewModel.currentUser?.displayName ?? "")!")
-                        .font(.headline)
-                        .padding()
-                    
-                    NavigationLink("Test Integration Page") {
-                        TestView()
-                    }
-                    .buttonStyle(.bordered)
-                    .padding(.top)
-                    
-                    Spacer()
-                    
-                    Button("Sign Out") {
-                        authViewModel.signOut()
-                    }
-                    .buttonStyle(.bordered)
-                    .foregroundColor(.red)
-                }
-                .navigationTitle("FitFam")
-            }
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Home")
-            }
-            
-            // Camera/Check-in
-            Text("Camera View")
+            HomeFeedView()
+                .environmentObject(authViewModel)
                 .tabItem {
-                    Image(systemName: "camera.fill")
-                    Text("Check-in")
+                    Image(systemName: "house.fill")
+                    Text("Home")
                 }
+                .tag(0)
             
-            // Groups
-            Text("Groups View")
+            // Activity Map
+            ActivityMapView()
                 .tabItem {
-                    Image(systemName: "person.3.fill")
-                    Text("Groups")
+                    Image(systemName: "map.fill")
+                    Text("Map")
                 }
+                .tag(1)
             
-            // Profile
-            Text("Profile View")
+            // Post Workout
+            PostWorkoutView()
                 .tabItem {
-                    Image(systemName: "person.fill")
+                    Image(systemName: "plus.circle.fill")
+                    Text("Post")
+                }
+                .tag(2)
+            
+            // Stats & Streaks
+            StatsView()
+                .tabItem {
+                    Image(systemName: "chart.bar.fill")
+                    Text("Stats")
+                }
+                .tag(3)
+            
+            // Profile & Settings
+            ProfileView()
+                .environmentObject(authViewModel)
+                .tabItem {
+                    Image(systemName: "person.circle.fill")
                     Text("Profile")
                 }
+                .tag(4)
         }
+        .accentColor(.blue)
     }
 }
 
