@@ -6,12 +6,20 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
 @main
 struct FitFamApp: App {
+    @StateObject private var authViewModel = AuthViewModel()
+    
+    init() {
+        AppConfiguration.shared.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authViewModel)
         }
     }
 }
