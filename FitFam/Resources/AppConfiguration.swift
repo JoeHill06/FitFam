@@ -12,7 +12,9 @@ class AppConfiguration {
     
     private func configureFirebase() {
         guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") else {
-            print("⚠️ GoogleService-Info.plist not found. Please add your Firebase configuration file.")
+            print("⚠️ GoogleService-Info.plist not found. Running in demo mode.")
+            print("📱 UI will work, but authentication will be disabled.")
+            print("🔧 Add GoogleService-Info.plist from Firebase Console to enable auth.")
             return
         }
         

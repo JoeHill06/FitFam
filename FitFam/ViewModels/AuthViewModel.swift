@@ -189,6 +189,10 @@ class AuthViewModel: ObservableObject {
             try await firebaseService.updateUser(user)
             currentUser = user
             
+            print("✅ Onboarding completed for user: \(user.username)")
+            print("✅ User isOnboarded: \(user.isOnboarded)")
+            print("✅ needsOnboarding: \(needsOnboarding)")
+            
         } catch {
             showError("Failed to complete onboarding: \(error.localizedDescription)")
         }

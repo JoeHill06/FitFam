@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseAuth
+import FirebaseCore
 import AuthenticationServices
 import Combine
 
@@ -11,6 +12,13 @@ class AuthService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        // Check if Firebase is configured
+        guard FirebaseApp.app() != nil else {
+            print("🔧 Firebase not configured - running in demo mode")
+            self.user = nil
+            return
+        }
+        
         self.user = Auth.auth().currentUser
         
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
@@ -21,6 +29,11 @@ class AuthService: ObservableObject {
     }
     
     func signInWithApple() async throws {
+        guard FirebaseApp.app() != nil else {
+            await MainActor.run { errorMessage = "Firebase not configured. Add GoogleService-Info.plist to enable authentication." }
+            throw AuthError.unknown
+        }
+        
         await MainActor.run { isLoading = true }
         defer { Task { @MainActor in isLoading = false } }
         
@@ -40,6 +53,11 @@ class AuthService: ObservableObject {
     }
     
     func signIn(email: String, password: String) async throws {
+        guard FirebaseApp.app() != nil else {
+            await MainActor.run { errorMessage = "Firebase not configured. Add GoogleService-Info.plist to enable authentication." }
+            throw AuthError.unknown
+        }
+        
         await MainActor.run { isLoading = true }
         defer { Task { @MainActor in isLoading = false } }
         
@@ -60,6 +78,12 @@ class AuthService: ObservableObject {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             await MainActor.run { self.user = result.user }
         } catch {
+            print("🔴 Firebase Auth Error: \(error)")
+            if let authError = error as NSError? {
+                print("🔴 Error Code: \(authError.code)")
+                print("🔴 Error Domain: \(authError.domain)")
+                print("🔴 Error Details: \(authError.userInfo)")
+            }
             await MainActor.run { errorMessage = error.localizedDescription }
             throw error
         }

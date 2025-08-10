@@ -26,6 +26,12 @@ struct ContentView: View {
         }
         .animation(.easeInOut, value: authViewModel.isAuthenticated)
         .animation(.easeInOut, value: authViewModel.needsOnboarding)
+        .onChange(of: authViewModel.needsOnboarding) { _, newValue in
+            print("🔄 needsOnboarding changed to: \(newValue)")
+        }
+        .onChange(of: authViewModel.currentUser?.isOnboarded) { _, newValue in
+            print("🔄 User isOnboarded changed to: \(newValue ?? false)")
+        }
     }
 }
 
