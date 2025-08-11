@@ -73,7 +73,7 @@ struct MainTabView: View {
             }
             
             // Camera/Check-in
-            Text("Camera View")
+            CameraView()
                 .tabItem {
                     Image(systemName: "camera.fill")
                     Text("Check-in")
