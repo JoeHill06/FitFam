@@ -3,13 +3,20 @@
 //  FitFam
 //
 //  Created by Joe Hill on 10/08/2025.
+//  Enhanced by Claude on 10/08/2025.
+//
+//  Root view managing app navigation flow: Authentication → Onboarding → Main App
+//  Handles state transitions between different app phases based on user authentication status.
 //
 
 import SwiftUI
 
+/// Root content view handling app navigation flow
 struct ContentView: View {
+    // MARK: - Properties
     @EnvironmentObject var authViewModel: AuthViewModel
     
+    // MARK: - Body
     var body: some View {
         Group {
             if authViewModel.isAuthenticated {
@@ -35,64 +42,60 @@ struct ContentView: View {
     }
 }
 
+// MARK: - MainTabView
+
+/// Main tab-based navigation for authenticated users
 struct MainTabView: View {
+    // MARK: - Properties
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var selectedTab = 0              // Currently selected tab index
     
+    // MARK: - Body
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Home Feed
-            NavigationView {
-                VStack {
-                    Text("Home Feed")
-                        .font(.title)
-                        .padding()
-                    
-                    Text("Welcome \(authViewModel.currentUser?.displayName ?? "")!")
-                        .font(.headline)
-                        .padding()
-                    
-                    NavigationLink("Test Integration Page") {
-                        TestView()
-                    }
-                    .buttonStyle(.bordered)
-                    .padding(.top)
-                    
-                    Spacer()
-                    
-                    Button("Sign Out") {
-                        authViewModel.signOut()
-                    }
-                    .buttonStyle(.bordered)
-                    .foregroundColor(.red)
+            HomeFeedView()
+                .environmentObject(authViewModel)
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Home")
                 }
-                .navigationTitle("FitFam")
-            }
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Home")
-            }
+                .tag(0)
             
-            // Camera/Check-in
+            // Activity Map
+            ActivityMapView()
+                .tabItem {
+                    Image(systemName: "map.fill")
+                    Text("Map")
+                }
+                .tag(1)
+            
+            // Camera/Check-in - Keep our dual camera functionality
             CameraView()
                 .tabItem {
                     Image(systemName: "camera.fill")
                     Text("Check-in")
                 }
+                .tag(2)
             
-            // Groups
-            Text("Groups View")
+            // Stats & Streaks
+            StatsView()
                 .tabItem {
-                    Image(systemName: "person.3.fill")
-                    Text("Groups")
+                    Image(systemName: "chart.bar.fill")
+                    Text("Stats")
                 }
+                .tag(3)
             
-            // Profile
-            Text("Profile View")
+            // Profile & Settings
+            ProfileView()
+                .environmentObject(authViewModel)
                 .tabItem {
-                    Image(systemName: "person.fill")
+                    Image(systemName: "person.circle.fill")
                     Text("Profile")
                 }
+                .tag(4)
         }
+        .accentColor(.blue)
     }
 }
 

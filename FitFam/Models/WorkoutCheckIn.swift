@@ -47,7 +47,7 @@ struct WorkoutCheckIn: Identifiable, Codable {
 }
 
 struct MediaItem: Identifiable, Codable {
-    let id = UUID().uuidString
+    var id = UUID().uuidString
     let type: MediaType
     let frontCameraURL: String?
     let backCameraURL: String?
