@@ -170,7 +170,9 @@ struct CameraControlsView: View {
                     .fill(.black.opacity(0.3))
                     .frame(width: smallButtonSize, height: smallButtonSize)
                 
-                Image(systemName: "arrow.triangle.2.circlepath")
+                // Use different icon for dual camera mode vs single camera mode
+                Image(systemName: AVCaptureMultiCamSession.isMultiCamSupported ? 
+                      "arrow.triangle.2.circlepath.camera" : "arrow.triangle.2.circlepath")
                     .font(.title3)
                     .foregroundColor(.white)
             }

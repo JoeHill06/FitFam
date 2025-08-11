@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import UIKit
 import Combine
+import SwiftUI
 
 /// Service for handling dual camera capture with BeReal-style front/back simultaneous recording
 /// Supports both multi-cam (iPhone XS+) and sequential capture fallback for older devices
@@ -15,6 +16,7 @@ class CameraService: NSObject, ObservableObject {
     @Published var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var isCapturing = false
     @Published var error: CameraError?
+    @Published var isBackCameraPrimary = true // Track which camera is the main view for dual camera
     
     // MARK: - Private Properties
     private let captureSession = AVCaptureMultiCamSession()
@@ -155,6 +157,32 @@ class CameraService: NSObject, ObservableObject {
         }
     }
     
+    /// Clean up capture session inputs and outputs
+    private func cleanupSession() {
+        print("🧹 Cleaning up capture session...")
+        
+        // Remove all inputs
+        for input in captureSession.inputs {
+            captureSession.removeInput(input)
+        }
+        
+        // Remove all outputs
+        for output in captureSession.outputs {
+            captureSession.removeOutput(output)
+        }
+        
+        // Remove all connections
+        for connection in captureSession.connections {
+            captureSession.removeConnection(connection)
+        }
+        
+        // Clear camera input references
+        frontCameraInput = nil
+        backCameraInput = nil
+        
+        print("✅ Capture session cleaned up")
+    }
+    
     /// Configure dual camera session with fallback to single camera
     private func configureSession() {
         print("⚙️ Configuring camera session...")
@@ -166,7 +194,14 @@ class CameraService: NSObject, ObservableObject {
             // Try to configure dual camera setup
             if isMultiCamSupported {
                 print("🔄 Attempting dual camera setup...")
-                try configureDualCameraSession()
+                do {
+                    try configureDualCameraSession()
+                } catch {
+                    print("⚠️ Dual camera setup failed, falling back to single camera: \(error)")
+                    // Clean up any partially configured inputs/outputs
+                    cleanupSession()
+                    try configureSingleCameraSession()
+                }
             } else {
                 print("🔄 Using single camera fallback...")
                 try configureSingleCameraSession()
@@ -294,6 +329,8 @@ class CameraService: NSObject, ObservableObject {
             throw CameraError.configurationFailed
         }
         
+        var connectionsCreated = 0
+        
         // Front camera connection
         if let frontVideoPort = frontInput.ports(for: .video, 
                                                 sourceDeviceType: frontInput.device.deviceType, 
@@ -302,10 +339,13 @@ class CameraService: NSObject, ObservableObject {
                                                           output: frontPhotoOutput)
             if captureSession.canAddConnection(frontPhotoConnection) {
                 captureSession.addConnection(frontPhotoConnection)
+                connectionsCreated += 1
                 print("✅ Front camera photo connection added")
             } else {
                 print("❌ Cannot add front camera photo connection")
             }
+        } else {
+            print("❌ Front camera video port not found")
         }
         
         // Back camera connection
@@ -316,10 +356,19 @@ class CameraService: NSObject, ObservableObject {
                                                          output: backPhotoOutput)
             if captureSession.canAddConnection(backPhotoConnection) {
                 captureSession.addConnection(backPhotoConnection)
+                connectionsCreated += 1
                 print("✅ Back camera photo connection added")
             } else {
                 print("❌ Cannot add back camera photo connection")
             }
+        } else {
+            print("❌ Back camera video port not found")
+        }
+        
+        // Ensure at least one connection was created
+        guard connectionsCreated > 0 else {
+            print("❌ No camera connections could be created")
+            throw CameraError.configurationFailed
         }
         
         print("🔌 Photo outputs and connections configured")
@@ -398,39 +447,43 @@ class CameraService: NSObject, ObservableObject {
     
     // MARK: - Camera Switching
     
-    /// Switch between front and back camera for single camera mode
+    /// Toggle which camera is primary in dual camera mode, or switch cameras in single camera mode
     func switchCamera() {
-        guard !isMultiCamSupported else {
-            print("⚠️ Camera switching not needed in dual camera mode")
+        if isMultiCamSupported {
+            // For dual camera, toggle which camera is primary
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isBackCameraPrimary.toggle()
+            }
+            print("🔄 Switched camera view - Back camera primary: \(isBackCameraPrimary)")
             return
         }
         
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.captureSession.beginConfiguration()
+        // For single camera mode, physically switch between cameras
+        
+        Task { @MainActor in
+            captureSession.beginConfiguration()
             
             // Remove current input
-            if let currentInput = self.backCameraInput {
-                self.captureSession.removeInput(currentInput)
+            if let currentInput = backCameraInput {
+                captureSession.removeInput(currentInput)
             }
-            if let currentInput = self.frontCameraInput {
-                self.captureSession.removeInput(currentInput)
+            if let currentInput = frontCameraInput {
+                captureSession.removeInput(currentInput)
             }
             
             do {
                 // Switch to opposite camera
-                if self.backCameraInput != nil {
+                if backCameraInput != nil {
                     // Switch to front
                     guard let frontDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else {
                         throw CameraError.deviceNotAvailable
                     }
                     let frontInput = try AVCaptureDeviceInput(device: frontDevice)
                     
-                    if self.captureSession.canAddInput(frontInput) {
-                        self.captureSession.addInput(frontInput)
-                        self.frontCameraInput = frontInput
-                        self.backCameraInput = nil
+                    if captureSession.canAddInput(frontInput) {
+                        captureSession.addInput(frontInput)
+                        frontCameraInput = frontInput
+                        backCameraInput = nil
                         print("📱 Switched to front camera")
                     }
                 } else {
@@ -440,10 +493,10 @@ class CameraService: NSObject, ObservableObject {
                     }
                     let backInput = try AVCaptureDeviceInput(device: backDevice)
                     
-                    if self.captureSession.canAddInput(backInput) {
-                        self.captureSession.addInput(backInput)
-                        self.backCameraInput = backInput
-                        self.frontCameraInput = nil
+                    if captureSession.canAddInput(backInput) {
+                        captureSession.addInput(backInput)
+                        backCameraInput = backInput
+                        frontCameraInput = nil
                         print("📱 Switched to back camera")
                     }
                 }
@@ -451,7 +504,7 @@ class CameraService: NSObject, ObservableObject {
                 print("❌ Camera switch failed: \(error)")
             }
             
-            self.captureSession.commitConfiguration()
+            captureSession.commitConfiguration()
         }
     }
     
@@ -495,28 +548,36 @@ class CameraService: NSObject, ObservableObject {
         let settings = AVCapturePhotoSettings()
         settings.flashMode = flashMode
         
-        return await withTaskGroup(of: UIImage?.self, returning: (UIImage?, UIImage?).self) { group in
+        return await withTaskGroup(of: (UIImage?, Bool).self, returning: (UIImage?, UIImage?).self) { group in
             group.addTask {
-                await self.capturePhotoFromOutput(self.frontPhotoOutput, settings: settings)
+                let image = await self.capturePhotoFromOutput(self.frontPhotoOutput, settings: settings)
+                return (image, true) // true indicates front camera
             }
             
             group.addTask {
-                await self.capturePhotoFromOutput(self.backPhotoOutput, settings: settings)
+                let image = await self.capturePhotoFromOutput(self.backPhotoOutput, settings: settings)
+                return (image, false) // false indicates back camera
             }
             
-            var results: [UIImage?] = []
-            for await result in group {
-                results.append(result)
+            var frontImage: UIImage?
+            var backImage: UIImage?
+            
+            for await (image, isFront) in group {
+                if isFront {
+                    frontImage = image?.fixedFrontCameraOrientation()
+                } else {
+                    backImage = image?.fixedBackCameraOrientation()
+                }
             }
             
-            return (results[safe: 0] ?? nil, results[safe: 1] ?? nil)
+            return (frontImage, backImage)
         }
     }
     
     /// Fallback single camera capture
     private func captureSinglePhoto() async -> (frontImage: UIImage?, backImage: UIImage?) {
         let backImage = await capturePhotoFromOutput(backPhotoOutput, settings: AVCapturePhotoSettings())
-        return (nil, backImage)
+        return (nil, backImage?.fixedBackCameraOrientation())
     }
     
     /// Helper to capture photo from specific output
@@ -542,6 +603,66 @@ class CameraService: NSObject, ObservableObject {
 extension Array {
     subscript(safe index: Index) -> Element? {
         return indices.contains(index) ? self[index] : nil
+    }
+}
+
+extension UIImage {
+    /// Fix orientation for front camera images that appear upside down
+    func fixedFrontCameraOrientation() -> UIImage {
+        // Manually rotate the image 180 degrees using Core Graphics
+        guard let cgImage = self.cgImage else { return self }
+        
+        let width = cgImage.width
+        let height = cgImage.height
+        
+        guard let colorSpace = cgImage.colorSpace,
+              let context = CGContext(data: nil,
+                                    width: width,
+                                    height: height,
+                                    bitsPerComponent: cgImage.bitsPerComponent,
+                                    bytesPerRow: 0,
+                                    space: colorSpace,
+                                    bitmapInfo: cgImage.bitmapInfo.rawValue) else {
+            return self
+        }
+        
+        // Rotate 180 degrees
+        context.translateBy(x: CGFloat(width), y: CGFloat(height))
+        context.rotate(by: .pi)
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        guard let rotatedCGImage = context.makeImage() else { return self }
+        
+        return UIImage(cgImage: rotatedCGImage, scale: self.scale, orientation: .up)
+    }
+    
+    /// Fix orientation for back camera images that appear upside down
+    func fixedBackCameraOrientation() -> UIImage {
+        // Manually rotate the image 180 degrees using Core Graphics
+        guard let cgImage = self.cgImage else { return self }
+        
+        let width = cgImage.width
+        let height = cgImage.height
+        
+        guard let colorSpace = cgImage.colorSpace,
+              let context = CGContext(data: nil,
+                                    width: width,
+                                    height: height,
+                                    bitsPerComponent: cgImage.bitsPerComponent,
+                                    bytesPerRow: 0,
+                                    space: colorSpace,
+                                    bitmapInfo: cgImage.bitmapInfo.rawValue) else {
+            return self
+        }
+        
+        // Rotate 180 degrees
+        context.translateBy(x: CGFloat(width), y: CGFloat(height))
+        context.rotate(by: .pi)
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        guard let rotatedCGImage = context.makeImage() else { return self }
+        
+        return UIImage(cgImage: rotatedCGImage, scale: self.scale, orientation: .up)
     }
 }
 
