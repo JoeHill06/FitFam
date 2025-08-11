@@ -68,7 +68,7 @@ struct CameraPreviewView: UIViewRepresentable {
 /// Dual camera preview layout matching BeReal/Instagram style
 /// Shows large back camera with smaller front camera overlay
 struct DualCameraPreviewView: View {
-    @StateObject private var cameraService = CameraService()
+    @EnvironmentObject var cameraService: CameraService
     
     // Layout configuration
     private let frontCameraSize: CGSize = CGSize(width: 120, height: 160)
@@ -83,38 +83,79 @@ struct DualCameraPreviewView: View {
                     .ignoresSafeArea(.all, edges: [.top, .leading, .trailing])
                 
                 if cameraService.isSessionRunning {
-                    // Back camera - Full screen background
-                    CameraPreviewView(
-                        previewLayer: cameraService.getBackPreviewLayer(),
-                        cornerRadius: 0,
-                        isMirrored: false
-                    )
-                    .ignoresSafeArea(.all, edges: [.top, .leading, .trailing])
-                    
-                    // Front camera - Small overlay in top right
-                    VStack {
-                        HStack {
-                            Spacer()
-                            
-                            CameraPreviewView(
-                                previewLayer: cameraService.getFrontPreviewLayer(),
-                                cornerRadius: cornerRadius,
-                                isMirrored: true
-                            )
-                            .frame(width: frontCameraSize.width, 
-                                   height: frontCameraSize.height)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: cornerRadius)
-                                    .stroke(Color.white.opacity(0.3), lineWidth: 2)
-                            )
-                            .shadow(radius: 8)
-                            .offset(frontCameraOffset)
-                        }
+                    if cameraService.isBackCameraPrimary {
+                        // Back camera - Full screen background
+                        CameraPreviewView(
+                            previewLayer: cameraService.getBackPreviewLayer(),
+                            cornerRadius: 0,
+                            isMirrored: false
+                        )
+                        .ignoresSafeArea(.all, edges: [.top, .leading, .trailing])
                         
-                        Spacer()
+                        // Front camera - Small overlay in top right (clickable)
+                        VStack {
+                            HStack {
+                                Spacer()
+                                
+                                CameraPreviewView(
+                                    previewLayer: cameraService.getFrontPreviewLayer(),
+                                    cornerRadius: cornerRadius,
+                                    isMirrored: true
+                                )
+                                .frame(width: frontCameraSize.width, 
+                                       height: frontCameraSize.height)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: cornerRadius)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                                )
+                                .shadow(radius: 8)
+                                .offset(frontCameraOffset)
+                                .onTapGesture {
+                                    cameraService.switchCamera()
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.top, 60) // Account for status bar
+                        .padding(.trailing, 20)
+                    } else {
+                        // Front camera - Full screen background
+                        CameraPreviewView(
+                            previewLayer: cameraService.getFrontPreviewLayer(),
+                            cornerRadius: 0,
+                            isMirrored: true
+                        )
+                        .ignoresSafeArea(.all, edges: [.top, .leading, .trailing])
+                        
+                        // Back camera - Small overlay in top right (clickable)
+                        VStack {
+                            HStack {
+                                Spacer()
+                                
+                                CameraPreviewView(
+                                    previewLayer: cameraService.getBackPreviewLayer(),
+                                    cornerRadius: cornerRadius,
+                                    isMirrored: false
+                                )
+                                .frame(width: frontCameraSize.width, 
+                                       height: frontCameraSize.height)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: cornerRadius)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                                )
+                                .shadow(radius: 8)
+                                .offset(frontCameraOffset)
+                                .onTapGesture {
+                                    cameraService.switchCamera()
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.top, 60) // Account for status bar
+                        .padding(.trailing, 20)
                     }
-                    .padding(.top, 60) // Account for status bar
-                    .padding(.trailing, 20)
                 } else if !cameraService.isAuthorized {
                     // Permission denied state
                     CameraPermissionView()

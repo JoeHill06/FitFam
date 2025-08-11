@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import UIKit
 import Combine
+import SwiftUI
 
 /// Service for handling dual camera capture with BeReal-style front/back simultaneous recording
 /// Supports both multi-cam (iPhone XS+) and sequential capture fallback for older devices
@@ -15,6 +16,7 @@ class CameraService: NSObject, ObservableObject {
     @Published var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var isCapturing = false
     @Published var error: CameraError?
+    @Published var isBackCameraPrimary = true // Track which camera is the main view for dual camera
     
     // MARK: - Private Properties
     private let captureSession = AVCaptureMultiCamSession()
@@ -445,39 +447,43 @@ class CameraService: NSObject, ObservableObject {
     
     // MARK: - Camera Switching
     
-    /// Switch between front and back camera for single camera mode
+    /// Toggle which camera is primary in dual camera mode, or switch cameras in single camera mode
     func switchCamera() {
-        guard !isMultiCamSupported else {
-            print("⚠️ Camera switching not needed in dual camera mode")
+        if isMultiCamSupported {
+            // For dual camera, toggle which camera is primary
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isBackCameraPrimary.toggle()
+            }
+            print("🔄 Switched camera view - Back camera primary: \(isBackCameraPrimary)")
             return
         }
         
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.captureSession.beginConfiguration()
+        // For single camera mode, physically switch between cameras
+        
+        Task { @MainActor in
+            captureSession.beginConfiguration()
             
             // Remove current input
-            if let currentInput = self.backCameraInput {
-                self.captureSession.removeInput(currentInput)
+            if let currentInput = backCameraInput {
+                captureSession.removeInput(currentInput)
             }
-            if let currentInput = self.frontCameraInput {
-                self.captureSession.removeInput(currentInput)
+            if let currentInput = frontCameraInput {
+                captureSession.removeInput(currentInput)
             }
             
             do {
                 // Switch to opposite camera
-                if self.backCameraInput != nil {
+                if backCameraInput != nil {
                     // Switch to front
                     guard let frontDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else {
                         throw CameraError.deviceNotAvailable
                     }
                     let frontInput = try AVCaptureDeviceInput(device: frontDevice)
                     
-                    if self.captureSession.canAddInput(frontInput) {
-                        self.captureSession.addInput(frontInput)
-                        self.frontCameraInput = frontInput
-                        self.backCameraInput = nil
+                    if captureSession.canAddInput(frontInput) {
+                        captureSession.addInput(frontInput)
+                        frontCameraInput = frontInput
+                        backCameraInput = nil
                         print("📱 Switched to front camera")
                     }
                 } else {
@@ -487,10 +493,10 @@ class CameraService: NSObject, ObservableObject {
                     }
                     let backInput = try AVCaptureDeviceInput(device: backDevice)
                     
-                    if self.captureSession.canAddInput(backInput) {
-                        self.captureSession.addInput(backInput)
-                        self.backCameraInput = backInput
-                        self.frontCameraInput = nil
+                    if captureSession.canAddInput(backInput) {
+                        captureSession.addInput(backInput)
+                        backCameraInput = backInput
+                        frontCameraInput = nil
                         print("📱 Switched to back camera")
                     }
                 }
@@ -498,7 +504,7 @@ class CameraService: NSObject, ObservableObject {
                 print("❌ Camera switch failed: \(error)")
             }
             
-            self.captureSession.commitConfiguration()
+            captureSession.commitConfiguration()
         }
     }
     
