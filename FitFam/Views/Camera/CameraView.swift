@@ -24,19 +24,6 @@ struct CameraView: View {
             CameraControlsView(capturedImages: $capturedImages)
                 .environmentObject(cameraService)
             
-            // Capture mode toggle
-            VStack {
-                Spacer()
-                
-                HStack {
-                    CaptureModeToggle()
-                        .environmentObject(cameraService)
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 200) // Above capture controls
-            }
         }
         .preferredColorScheme(.dark)
         .statusBarHidden()
@@ -62,50 +49,7 @@ struct CameraView: View {
     // MARK: - Top Overlay
     
     private var topOverlay: some View {
-        HStack {
-            // Close button
-            Button {
-                // Handle close - would typically dismiss or go back
-                print("Close camera")
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.title2)
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(.black.opacity(0.3))
-                    .clipShape(Circle())
-            }
-            
-            Spacer()
-            
-            // Camera info/settings
-            VStack(alignment: .trailing, spacing: 4) {
-                if cameraService.isSessionRunning {
-                    Text("●")
-                        .foregroundColor(.red)
-                        .font(.caption)
-                    + Text(" REC")
-                        .foregroundColor(.white)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                }
-                
-                if AVCaptureMultiCamSession.isMultiCamSupported {
-                    Text("DUAL CAM")
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.7))
-                } else {
-                    Text("SINGLE CAM")
-                        .font(.caption2)
-                        .foregroundColor(.yellow.opacity(0.8))
-                }
-            }
-            .padding()
-            .background(.black.opacity(0.3))
-            .cornerRadius(8)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
+        EmptyView()
     }
 }
 
