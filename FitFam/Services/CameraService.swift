@@ -522,7 +522,8 @@ class CameraService: NSObject, ObservableObject {
     /// Helper to capture photo from specific output
     private func capturePhotoFromOutput(_ output: AVCapturePhotoOutput, settings: AVCapturePhotoSettings) async -> UIImage? {
         return await withCheckedContinuation { continuation in
-            let delegate = PhotoCaptureDelegate { [weak self] result in
+            var delegate: PhotoCaptureDelegate!
+            delegate = PhotoCaptureDelegate { [weak self] result in
                 self?.photoCaptureInProgress.remove(delegate)
                 continuation.resume(returning: result)
             }
