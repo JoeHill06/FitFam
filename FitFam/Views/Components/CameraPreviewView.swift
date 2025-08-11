@@ -26,16 +26,29 @@ struct CameraPreviewView: UIViewRepresentable {
         previewLayer.frame = view.bounds
         previewLayer.cornerRadius = cornerRadius
         
-        // Apply mirroring and orientation for front camera
-        if isMirrored, let connection = previewLayer.connection {
+        // Apply mirroring and orientation
+        if let connection = previewLayer.connection {
+            // Handle mirroring - flip both cameras horizontally
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = true
+                if isMirrored {
+                    // Front camera - flip horizontally (opposite of before)
+                    connection.isVideoMirrored = false
+                } else {
+                    // Back camera - flip horizontally too
+                    connection.isVideoMirrored = true
+                }
             }
             
-            // Fix orientation for front camera
+            // Fix orientation - flip both cameras vertically
             if connection.isVideoOrientationSupported {
-                connection.videoOrientation = .portrait
+                if isMirrored {
+                    // Front camera - flip vertically (opposite of before)
+                    connection.videoOrientation = .portrait
+                } else {
+                    // Back camera - flip vertically too
+                    connection.videoOrientation = .portrait
+                }
             }
         }
         
@@ -67,7 +80,7 @@ struct DualCameraPreviewView: View {
             ZStack {
                 // Background - Black for loading state
                 Color.black
-                    .ignoresSafeArea()
+                    .ignoresSafeArea(.all, edges: [.top, .leading, .trailing])
                 
                 if cameraService.isSessionRunning {
                     // Back camera - Full screen background
@@ -76,7 +89,7 @@ struct DualCameraPreviewView: View {
                         cornerRadius: 0,
                         isMirrored: false
                     )
-                    .ignoresSafeArea()
+                    .ignoresSafeArea(.all, edges: [.top, .leading, .trailing])
                     
                     // Front camera - Small overlay in top right
                     VStack {

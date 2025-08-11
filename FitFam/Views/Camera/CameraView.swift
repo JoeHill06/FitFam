@@ -40,7 +40,6 @@ struct CameraView: View {
         }
         .preferredColorScheme(.dark)
         .statusBarHidden()
-        .navigationBarHidden(true)
         .onChange(of: capturedImages != nil) { _, hasImages in
             if hasImages {
                 showPostComposer = true
