@@ -32,10 +32,9 @@ struct ContentView: View {
                     .environmentObject(authViewModel)
             }
         }
-        .primaryBackground()
         .preferredColorScheme(.dark)
-        .animation(DesignTokens.Animation.medium, value: authViewModel.isAuthenticated)
-        .animation(DesignTokens.Animation.medium, value: authViewModel.needsOnboarding)
+        .animation(.easeInOut(duration: 0.3), value: authViewModel.isAuthenticated)
+        .animation(.easeInOut(duration: 0.3), value: authViewModel.needsOnboarding)
         .onChange(of: authViewModel.needsOnboarding) { _, newValue in
             print("🔄 needsOnboarding changed to: \(newValue)")
         }
@@ -98,8 +97,7 @@ struct MainTabView: View {
                 }
                 .tag(4)
         }
-        .accentColor(DesignTokens.Colors.accent)
-        .primaryBackground()
+        .accentColor(.red)
         .preferredColorScheme(.dark)
     }
 }

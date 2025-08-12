@@ -279,14 +279,13 @@ struct AuthenticationView: View {
                     .foregroundColor(DesignTokens.Colors.accent)
                 }
             }
-            .padding(.horizontal, DesignTokens.Spacing.lg)
-            .primaryBackground()
+            .padding(.horizontal, 24)
+            .background(Color.black)
             .navigationBarHidden(true)
             .preferredColorScheme(.dark)
         }
         .alert("Error", isPresented: $authViewModel.showError) {
             Button("OK") {
-                HapticManager.lightTap()
                 authViewModel.clearError()
             }
         } message: {
