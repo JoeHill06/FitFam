@@ -30,24 +30,23 @@ class AuthService: ObservableObject {
     }
     
     // Google Sign In
+    @MainActor
     func signInWithGoogle() async throws {
         guard FirebaseApp.app() != nil else {
-            await MainActor.run { errorMessage = "Firebase not configured. Add GoogleService-Info.plist to enable authentication." }
+            errorMessage = "Firebase not configured. Add GoogleService-Info.plist to enable authentication."
             throw AuthError.unknown
         }
         
-        await MainActor.run { isLoading = true }
-        defer { Task { @MainActor in isLoading = false } }
+        isLoading = true
+        defer { isLoading = false }
         
         // Get the presenting view controller
-        guard let presentingViewController = await MainActor.run(body: {
-            UIApplication.shared.connectedScenes
-                .compactMap { $0 as? UIWindowScene }
-                .flatMap { $0.windows }
-                .first { $0.isKeyWindow }?
-                .rootViewController
-        }) else {
-            await MainActor.run { errorMessage = "Could not find presenting view controller" }
+        guard let presentingViewController = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow })?
+            .rootViewController else {
+            errorMessage = "Could not find presenting view controller"
             throw AuthError.unknown
         }
         
@@ -74,7 +73,7 @@ class AuthService: ObservableObject {
             
             // Sign in to Firebase with Google credential
             let authResult = try await Auth.auth().signIn(with: credential)
-            await MainActor.run { self.user = authResult.user }
+            self.user = authResult.user
             
             print("✅ Google Sign In successful for user: \(authResult.user.email ?? "unknown")")
             
@@ -88,14 +87,14 @@ class AuthService: ObservableObject {
             if error.domain == "com.google.GIDSignIn" {
                 switch error.code {
                 case -2: // User canceled
-                    await MainActor.run { errorMessage = "Google Sign In was cancelled" }
+                    errorMessage = "Google Sign In was cancelled"
                 case -4: // No internet connection
-                    await MainActor.run { errorMessage = "No internet connection" }
+                    errorMessage = "No internet connection"
                 default:
-                    await MainActor.run { errorMessage = "Google Sign In failed: \(error.localizedDescription)" }
+                    errorMessage = "Google Sign In failed: \(error.localizedDescription)"
                 }
             } else {
-                await MainActor.run { errorMessage = "Google Sign In failed: \(error.localizedDescription)" }
+                errorMessage = "Google Sign In failed: \(error.localizedDescription)"
             }
             throw error
         }

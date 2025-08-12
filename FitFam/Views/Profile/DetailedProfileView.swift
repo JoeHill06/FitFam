@@ -3,21 +3,13 @@ import SwiftUI
 struct DetailedProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showEditProfile = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    Text("Detailed Profile")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .padding(.top)
-                    
-                    Text("Full profile editing coming soon! ⚡")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                    
+                    // Profile Header
                     VStack(spacing: 16) {
                         AsyncImage(url: URL(string: authViewModel.currentUser?.avatarURL ?? "")) { image in
                             image
@@ -34,6 +26,7 @@ struct DetailedProfileView: View {
                         }
                         .frame(width: 120, height: 120)
                         .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                         
                         VStack(spacing: 8) {
                             Text(authViewModel.currentUser?.displayName ?? "User")
@@ -48,12 +41,38 @@ struct DetailedProfileView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                        
+                        // Edit Profile Button
+                        Button("Edit Profile") {
+                            showEditProfile = true
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
+                    
+                    // Profile Details Section
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Profile Details")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        
+                        VStack(spacing: 16) {
+                            ProfileDetailRow(title: "First Name", value: authViewModel.currentUser?.firstName ?? "Not set")
+                            ProfileDetailRow(title: "Surname", value: authViewModel.currentUser?.surname ?? "Not set")
+                            ProfileDetailRow(title: "Username", value: "@\(authViewModel.currentUser?.username ?? "Not set")")
+                            ProfileDetailRow(title: "Display Name", value: authViewModel.currentUser?.displayName ?? "Not set")
+                            ProfileDetailRow(title: "Email", value: authViewModel.currentUser?.email ?? "Not set")
+                            ProfileDetailRow(title: "Member Since", value: authViewModel.currentUser?.createdAt.formatted(date: .abbreviated, time: .omitted) ?? "Unknown")
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
                     
                     Spacer()
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Profile Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -63,6 +82,31 @@ struct DetailedProfileView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileView()
+                .environmentObject(authViewModel)
+        }
+    }
+}
+
+struct ProfileDetailRow: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+                .frame(width: 100, alignment: .leading)
+            
+            Text(value)
+                .font(.subheadline)
+                .foregroundColor(.primary)
+            
+            Spacer()
         }
     }
 }

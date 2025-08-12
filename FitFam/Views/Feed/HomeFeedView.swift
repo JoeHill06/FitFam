@@ -23,21 +23,36 @@ struct HomeFeedView: View {
             VStack(spacing: 0) {
                 // Custom top navigation bar
                 HStack {
-                    // Profile icon button
+                    // Enhanced profile button with email
                     Button(action: {
                         showDetailedProfile = true
                     }) {
-                        AsyncImage(url: URL(string: authViewModel.currentUser?.avatarURL ?? "")) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Image(systemName: "person.circle")
-                                .font(.title2)
-                                .foregroundColor(.blue)
+                        HStack(spacing: 8) {
+                            AsyncImage(url: URL(string: authViewModel.currentUser?.avatarURL ?? "")) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Image(systemName: "person.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.red)
+                            }
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                            
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(authViewModel.currentUser?.displayName ?? "User")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                
+                                Text(authViewModel.currentUser?.email ?? "No email")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
                         }
-                        .frame(width: 32, height: 32)
-                        .clipShape(Circle())
                     }
                     
                     Spacer()
@@ -50,13 +65,38 @@ struct HomeFeedView: View {
                     
                     Spacer()
                     
-                    // Add contacts button
-                    Button(action: {
-                        showContactsView = true
-                    }) {
-                        Image(systemName: "person.badge.plus")
-                            .font(.title2)
-                            .foregroundColor(.blue)
+                    HStack(spacing: 12) {
+                        // Simple sign out button (less clicky)
+                        Button(action: {
+                            authViewModel.signOut()
+                        }) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.title3)
+                                .foregroundColor(.red)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Enhanced add contacts button with priority animation
+                        EnhancedIconButton(
+                            systemName: "person.badge.plus",
+                            color: .red,
+                            feedbackType: .socialLike
+                        ) {
+                            showContactsView = true
+                        }
+                        .overlay(
+                            // Subtle pulse animation for CTA priority
+                            Circle()
+                                .stroke(Color.red.opacity(0.3), lineWidth: 2)
+                                .frame(width: 40, height: 40)
+                                .scaleEffect(1.5)
+                                .opacity(0)
+                                .animation(
+                                    .easeOut(duration: 2.0)
+                                    .repeatForever(autoreverses: false),
+                                    value: true
+                                )
+                        )
                     }
                 }
                 .padding(.horizontal, 16)
@@ -72,7 +112,11 @@ struct HomeFeedView: View {
                 // Feed content
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(feedViewModel.posts) { post in
+                        // Pull-to-refresh indicator (invisible but functional)
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 1)
+                        ForEach(Array(feedViewModel.posts.enumerated()), id: \.offset) { index, post in
                             PostCardView(post: post)
                                 .environmentObject(authViewModel)
                                 .onAppear {
@@ -99,6 +143,11 @@ struct HomeFeedView: View {
                     .padding(.top, 8)
                 }
                 .refreshable {
+                    // Psychological satisfaction through haptic + sound feedback
+                    HapticManager.shared.refreshComplete()
+                    SoundManager.shared.refreshComplete()
+                    
+                    // Refresh the feed
                     await feedViewModel.refreshFeed()
                 }
             }

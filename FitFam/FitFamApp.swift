@@ -12,6 +12,7 @@ import GoogleSignIn
 @main
 struct FitFamApp: App {
     @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var cameraService = CameraService() // Initialize camera service eagerly
     
     init() {
         AppConfiguration.shared.configure()
@@ -21,6 +22,7 @@ struct FitFamApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authViewModel)
+                .environmentObject(cameraService) // Provide global camera service
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }

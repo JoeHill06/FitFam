@@ -28,27 +28,16 @@ struct CameraPreviewView: UIViewRepresentable {
         
         // Apply mirroring and orientation
         if let connection = previewLayer.connection {
-            // Handle mirroring - flip both cameras horizontally
+            // Handle mirroring properly
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                if isMirrored {
-                    // Front camera - flip horizontally (opposite of before)
-                    connection.isVideoMirrored = false
-                } else {
-                    // Back camera - flip horizontally too
-                    connection.isVideoMirrored = true
-                }
+                // Front camera should be mirrored, back camera should not
+                connection.isVideoMirrored = isMirrored
             }
             
-            // Fix orientation - flip both cameras vertically
+            // Set proper orientation
             if connection.isVideoOrientationSupported {
-                if isMirrored {
-                    // Front camera - flip vertically (opposite of before)
-                    connection.videoOrientation = .portrait
-                } else {
-                    // Back camera - flip vertically too
-                    connection.videoOrientation = .portrait
-                }
+                connection.videoOrientation = .portrait
             }
         }
         
@@ -252,17 +241,66 @@ struct DualCameraPreviewView: View {
                 } else if !cameraService.isAuthorized {
                     // Permission denied state
                     CameraPermissionView()
+                } else if cameraService.isSessionConfigured {
+                    // Session configured but not running - show instant preview
+                    Color.black
+                        .overlay(
+                            VStack {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.5)
+                                Text("Starting Camera...")
+                                    .foregroundColor(.white)
+                                    .font(.body)
+                                    .padding(.top, 8)
+                            }
+                        )
+                        .onAppear {
+                            // Retry starting the session after a short delay if stuck
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                if cameraService.isSessionConfigured && !cameraService.isSessionRunning {
+                                    print("🔄 Retrying camera session start...")
+                                    cameraService.startSession()
+                                }
+                            }
+                        }
                 } else {
-                    // Loading state
+                    // Initial loading state
                     CameraLoadingView()
                 }
             }
         }
         .onAppear {
+            print("📱 Camera view appeared - starting session")
+            cameraService.isCameraViewActive = true
             cameraService.startSession()
+            
+            // Fallback: If camera is still black after 1 second, force complete reload
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                if cameraService.isCameraViewActive && cameraService.isSessionRunning {
+                    print("🔄 Fallback check: forcing complete session reload to ensure camera works")
+                    cameraService.stopSession()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        if cameraService.isCameraViewActive {
+                            cameraService.startSession()
+                        }
+                    }
+                }
+            }
         }
         .onDisappear {
-            cameraService.stopSession()
+            print("📱 Camera view disappeared - delaying session stop")
+            cameraService.isCameraViewActive = false
+            // Much longer delay to keep session running for extended periods
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) {
+                // Only stop if we're still not on the camera screen
+                if !cameraService.isCameraViewActive {
+                    print("📱 Camera view still inactive after 30s - stopping session")
+                    cameraService.stopSession()
+                } else {
+                    print("📱 Camera view is back - keeping session running")
+                }
+            }
         }
         .alert("Camera Error", isPresented: .constant(cameraService.error != nil)) {
             Button("OK") {

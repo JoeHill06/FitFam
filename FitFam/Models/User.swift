@@ -19,8 +19,10 @@ struct User: Identifiable, Codable {
     let email: String               // User's email address
     
     // MARK: - Profile Information
+    var firstName: String           // User's first name
+    var surname: String             // User's surname/last name
     var username: String            // Unique username for social features
-    var displayName: String         // Display name shown in app
+    var displayName: String         // Display name shown in app (computed from firstName + surname)
     var avatarURL: String?          // Profile picture URL
     
     // MARK: - Account Status
@@ -39,11 +41,13 @@ struct User: Identifiable, Codable {
     // MARK: - Privacy & Settings
     var privacySettings: PrivacySettings
     
-    init(firebaseUID: String, email: String, username: String, displayName: String) {
+    init(firebaseUID: String, email: String, firstName: String = "", surname: String = "", username: String = "", displayName: String = "") {
         self.firebaseUID = firebaseUID
         self.email = email
-        self.username = username
-        self.displayName = displayName
+        self.firstName = firstName
+        self.surname = surname
+        self.username = username.isEmpty ? firstName.lowercased() + surname.lowercased() : username
+        self.displayName = displayName.isEmpty ? "\(firstName) \(surname)".trimmingCharacters(in: .whitespaces) : displayName
         self.avatarURL = nil
         self.createdAt = Date()
         self.lastActiveAt = Date()
@@ -67,7 +71,8 @@ extension User {
     static let mockUser = User(
         firebaseUID: "mock-uid",
         email: "test@example.com",
-        username: "testuser",
-        displayName: "Test User"
+        firstName: "Test",
+        surname: "User",
+        username: "testuser"
     )
 }

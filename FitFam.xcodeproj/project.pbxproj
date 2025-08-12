@@ -439,6 +439,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FitFam/Info.plist;
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = GoogleSignIn;\n    CFBundleURLSchemes =     (\n        \"com.googleusercontent.apps.543064302513-jlrrnk4c94i5fd3cie06403k8e2q3tsc\"\n    );\n}";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to take photos for workout check-ins and sharing fitness progress with friends.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -470,6 +471,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FitFam/Info.plist;
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = GoogleSignIn;\n    CFBundleURLSchemes =     (\n        \"com.googleusercontent.apps.543064302513-jlrrnk4c94i5fd3cie06403k8e2q3tsc\"\n    );\n}";
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to take photos for workout check-ins and sharing fitness progress with friends.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
