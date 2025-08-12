@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SwiftUI
 
 /// Manages haptic feedback with semantic methods for consistent user experience
 final class HapticManager {
@@ -53,31 +54,6 @@ final class HapticManager {
     static func selectionChanged() {
         let generator = UISelectionFeedbackGenerator()
         generator.selectionChanged()
-    }
-}
-
-// MARK: - View Extension for Easy Access
-extension View {
-    func onTapHaptic(_ style: HapticStyle = .light, action: @escaping () -> Void) -> some View {
-        self.onTapGesture {
-            switch style {
-            case .light:
-                HapticManager.lightTap()
-            case .medium:
-                HapticManager.mediumTap()
-            case .heavy:
-                HapticManager.heavyTap()
-            case .success:
-                HapticManager.success()
-            case .warning:
-                HapticManager.warning()
-            case .error:
-                HapticManager.error()
-            case .selection:
-                HapticManager.selectionChanged()
-            }
-            action()
-        }
     }
 }
 
