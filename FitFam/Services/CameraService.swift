@@ -19,7 +19,7 @@ class CameraService: NSObject, ObservableObject {
     @Published var isBackCameraPrimary = true // Track which camera is the main view for dual camera
     
     // MARK: - Private Properties
-    private let captureSession = AVCaptureMultiCamSession()
+    private var captureSession: AVCaptureSession!
     private var frontCameraInput: AVCaptureDeviceInput?
     private var backCameraInput: AVCaptureDeviceInput?
     
@@ -188,6 +188,13 @@ class CameraService: NSObject, ObservableObject {
         print("⚙️ Configuring camera session...")
         print("📱 Multi-cam supported: \(isMultiCamSupported)")
         
+        // Initialize the appropriate session type
+        if isMultiCamSupported {
+            captureSession = AVCaptureMultiCamSession()
+        } else {
+            captureSession = AVCaptureSession()
+        }
+        
         captureSession.beginConfiguration()
         
         do {
@@ -284,6 +291,11 @@ class CameraService: NSObject, ObservableObject {
     
     /// Fallback single camera configuration for older devices
     private func configureSingleCameraSession() throws {
+        // Ensure capture session is available
+        guard captureSession != nil else {
+            throw CameraError.configurationFailed
+        }
+        
         // Start with back camera as primary
         guard let backDevice = AVCaptureDevice.default(.builtInWideAngleCamera, 
                                                       for: .video, 
