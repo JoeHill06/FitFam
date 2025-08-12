@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSettings = false
+    @State private var showSignOutConfirmation = false
     
     var body: some View {
         NavigationView {
@@ -46,23 +47,12 @@ struct ProfileView: View {
                         }
                         
                         // Edit Profile Button
-                        Button(action: {
+                        SecondaryButton("Edit Profile") {
                             // TODO: Navigate to edit profile
-                        }) {
-                            Text("Edit Profile")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.blue)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 36)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(18)
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .elevatedSurface()
                     
                     // Quick Stats
                     VStack(alignment: .leading, spacing: 16) {
@@ -78,9 +68,7 @@ struct ProfileView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .elevatedSurface()
                     
                     // Recent Activity
                     VStack(alignment: .leading, spacing: 16) {
@@ -106,9 +94,7 @@ struct ProfileView: View {
                         .padding(.top, 8)
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .elevatedSurface()
                     
                     // Settings Section
                     VStack(spacing: 12) {
@@ -118,34 +104,50 @@ struct ProfileView: View {
                         
                         Divider()
                         
+                        // Sign Out Button with Confirmation
                         Button(action: {
-                            authViewModel.signOut()
+                            HapticManager.lightTap()
+                            showSignOutConfirmation = true
                         }) {
-                            HStack {
+                            HStack(spacing: DesignTokens.Spacing.md) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    .foregroundColor(.red)
+                                    .foregroundColor(DesignTokens.Colors.error)
+                                    .font(.system(size: 18, weight: .medium))
+                                
                                 Text("Sign Out")
-                                    .foregroundColor(.red)
-                                    .fontWeight(.medium)
+                                    .foregroundColor(DesignTokens.Colors.error)
+                                    .font(DesignTokens.Typography.bodyMedium)
+                                
                                 Spacer()
                             }
-                            .padding()
+                            .frame(minHeight: DesignTokens.InteractionSize.comfortable)
+                            .padding(.horizontal, DesignTokens.Spacing.md)
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .elevatedSurface()
                 }
-                .padding()
+                .padding(DesignTokens.Spacing.md)
             }
-            .background(Color(.systemGroupedBackground))
+            .primaryBackground()
             .navigationTitle("Profile")
+            .navigationBarTitleDisplayMode(.large)
+            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environmentObject(authViewModel)
         }
+        .confirmationDialog(
+            isPresented: $showSignOutConfirmation,
+            title: "Sign Out",
+            message: "Are you sure you want to sign out? You'll need to sign back in to access your account.",
+            confirmTitle: "Sign Out",
+            confirmAction: {
+                authViewModel.signOut()
+            },
+            isDestructive: true
+        )
     }
 }
 

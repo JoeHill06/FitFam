@@ -2,13 +2,21 @@ import SwiftUI
 import GoogleSignInSwift
 
 struct AuthenticationView: View {
-    @StateObject private var authViewModel = AuthViewModel()
+    @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSignUp = false
     @State private var email = ""
     @State private var password = ""
     @State private var phoneNumber = ""
     @State private var showPhoneSignIn = false
-    @State private var isLoading = false
+    @State private var emailError: String?
+    @State private var passwordError: String?
+    @State private var isEmailValid = false
+    @State private var isPasswordValid = false
+    
+    // Computed properties for validation
+    private var isFormValid: Bool {
+        !email.isEmpty && !password.isEmpty && emailError == nil && (showSignUp ? passwordError == nil : true)
+    }
     
     var body: some View {
         NavigationView {
@@ -16,18 +24,18 @@ struct AuthenticationView: View {
                 Spacer()
                 
                 // Logo and Title
-                VStack(spacing: 16) {
+                VStack(spacing: DesignTokens.Spacing.md) {
                     Image(systemName: "figure.strengthtraining.functional")
                         .font(.system(size: 60))
-                        .foregroundColor(.primary)
+                        .foregroundColor(DesignTokens.Colors.accent)
                     
                     Text("FitFam")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(DesignTokens.Typography.largeTitle)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
                     
                     Text("Stay motivated with friends")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(DesignTokens.Typography.subheadline)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
                 .padding(.bottom, 32)
                 
@@ -194,6 +202,50 @@ struct AuthenticationView: View {
             }
         } message: {
             Text(authViewModel.errorMessage ?? "An unknown error occurred")
+        }
+    }
+    
+    // MARK: - Validation Methods
+    private func validateEmail(_ email: String) {
+        let emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        
+        if email.isEmpty {
+            emailError = nil
+            isEmailValid = false
+        } else if !emailPredicate.evaluate(with: email) {
+            emailError = "Please enter a valid email address"
+            isEmailValid = false
+        } else {
+            emailError = nil
+            isEmailValid = true
+        }
+    }
+    
+    private func validatePassword(_ password: String) {
+        if !showSignUp {
+            // For sign in, don't validate password complexity
+            passwordError = nil
+            isPasswordValid = !password.isEmpty
+            return
+        }
+        
+        // For sign up, validate password complexity
+        if password.isEmpty {
+            passwordError = nil
+            isPasswordValid = false
+        } else if password.count < 6 {
+            passwordError = "Password must be at least 6 characters"
+            isPasswordValid = false
+        } else if !password.contains(where: { $0.isLetter }) {
+            passwordError = "Password must contain at least one letter"
+            isPasswordValid = false
+        } else if !password.contains(where: { $0.isNumber }) {
+            passwordError = "Password must contain at least one number"
+            isPasswordValid = false
+        } else {
+            passwordError = nil
+            isPasswordValid = true
         }
     }
 }
