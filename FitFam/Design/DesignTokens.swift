@@ -47,8 +47,8 @@ struct DesignTokens {
         static let largeTitle = Font.largeTitle.bold()
         static let title = Font.title.bold()
         static let title2 = Font.title2.bold()
-        static let title3 = Font.title3.semibold()
-        static let headline = Font.headline.semibold()
+        static let title3 = Font.title3.weight(.semibold)
+        static let headline = Font.headline.weight(.semibold)
         static let body = Font.body
         static let bodyMedium = Font.body.weight(.medium)
         static let bodyBold = Font.body.bold()
