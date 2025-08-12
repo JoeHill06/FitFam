@@ -20,7 +20,7 @@ struct AuthenticationView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: DesignTokens.Spacing.lg) {
                 Spacer()
                 
                 // Logo and Title
@@ -37,102 +37,172 @@ struct AuthenticationView: View {
                         .font(DesignTokens.Typography.subheadline)
                         .foregroundColor(DesignTokens.Colors.textSecondary)
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, DesignTokens.Spacing.xl)
                 
                 // Google Options
-                VStack(spacing: 12) {
+                VStack(spacing: DesignTokens.Spacing.md) {
                     if showSignUp {
                         // Google Sign Up - Official Button
-                        GoogleSignInButton(scheme: .light, style: .wide, state: .normal) {
+                        GoogleSignInButton(scheme: .dark, style: .wide, state: .normal) {
                             Task {
                                 await authViewModel.signUpWithGoogle()
                             }
                         }
-                        .frame(height: 50)
+                        .frame(height: DesignTokens.InteractionSize.comfortable)
                     } else {
                         // Google Sign In - Official Button  
-                        GoogleSignInButton(scheme: .light, style: .wide, state: .normal) {
+                        GoogleSignInButton(scheme: .dark, style: .wide, state: .normal) {
                             Task {
                                 await authViewModel.signInWithGoogle()
                             }
                         }
-                        .frame(height: 50)
+                        .frame(height: DesignTokens.InteractionSize.comfortable)
                     }
                     
-                    // Phone Sign In
+                    // Phone Sign In Button
                     Button {
+                        HapticManager.lightTap()
                         showPhoneSignIn.toggle()
                     } label: {
-                        HStack {
+                        HStack(spacing: DesignTokens.Spacing.sm) {
                             Image(systemName: "phone.fill")
-                                .foregroundColor(.white)
+                                .font(.system(size: 16, weight: .medium))
                             Text("Continue with Phone")
-                                .foregroundColor(.white)
-                                .fontWeight(.semibold)
+                                .font(DesignTokens.Typography.bodyMedium)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.green)
-                        .cornerRadius(25)
+                        .frame(height: DesignTokens.InteractionSize.comfortable)
+                        .background(DesignTokens.Colors.surfaceElevated)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                        .cornerRadius(DesignTokens.CornerRadius.md)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
+                                .stroke(DesignTokens.Colors.border, lineWidth: 1)
+                        )
                     }
                     .disabled(authViewModel.isLoading)
                 }
                 
                 // Phone Number Input (conditional)
                 if showPhoneSignIn {
-                    VStack(spacing: 12) {
+                    VStack(spacing: DesignTokens.Spacing.md) {
                         TextField("Phone Number (e.g., +1234567890)", text: $phoneNumber)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(DesignTokens.Typography.body)
+                            .padding(DesignTokens.Spacing.md)
+                            .background(DesignTokens.Colors.surfaceElevated)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
+                            .cornerRadius(DesignTokens.CornerRadius.md)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
+                                    .stroke(DesignTokens.Colors.border, lineWidth: 1)
+                            )
                             .keyboardType(.phonePad)
                         
                         Button {
+                            HapticManager.mediumTap()
                             Task {
                                 await authViewModel.signInWithPhone(phoneNumber: phoneNumber)
                             }
                         } label: {
                             Text("Send Verification Code")
-                                .fontWeight(.semibold)
+                                .font(DesignTokens.Typography.bodyMedium)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: DesignTokens.InteractionSize.comfortable)
+                                .background(phoneNumber.isEmpty ? DesignTokens.Colors.surfaceElevated : DesignTokens.Colors.accent)
+                                .foregroundColor(phoneNumber.isEmpty ? DesignTokens.Colors.textTertiary : DesignTokens.Colors.textPrimary)
+                                .cornerRadius(DesignTokens.CornerRadius.md)
                         }
-                        .buttonStyle(.bordered)
                         .disabled(phoneNumber.isEmpty || authViewModel.isLoading)
                     }
-                    .transition(.slide)
+                    .transition(.asymmetric(
+                        insertion: .scale.combined(with: .opacity),
+                        removal: .scale.combined(with: .opacity)
+                    ))
+                    .animation(DesignTokens.Animation.medium, value: showPhoneSignIn)
                 }
                 
                 // Divider
                 HStack {
                     Rectangle()
                         .frame(height: 1)
-                        .foregroundColor(.secondary.opacity(0.3))
+                        .foregroundColor(DesignTokens.Colors.separator)
                     
                     Text("or")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                        .padding(.horizontal, DesignTokens.Spacing.sm)
                     
                     Rectangle()
                         .frame(height: 1)
-                        .foregroundColor(.secondary.opacity(0.3))
+                        .foregroundColor(DesignTokens.Colors.separator)
                 }
                 
-                // Email/Password Login Section
-                
                 // Email/Password Form
-                VStack(spacing: 16) {
-                    TextField("Email", text: $email)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
+                VStack(spacing: DesignTokens.Spacing.md) {
+                    // Email Field
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                        TextField("Email", text: $email)
+                            .font(DesignTokens.Typography.body)
+                            .padding(DesignTokens.Spacing.md)
+                            .background(DesignTokens.Colors.surfaceElevated)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
+                            .cornerRadius(DesignTokens.CornerRadius.md)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
+                                    .stroke(
+                                        emailError != nil ? DesignTokens.Colors.error : DesignTokens.Colors.border,
+                                        lineWidth: 1
+                                    )
+                            )
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            .onChange(of: email) { _, newValue in
+                                validateEmail(newValue)
+                            }
+                        
+                        if let emailError = emailError {
+                            Text(emailError)
+                                .font(DesignTokens.Typography.caption)
+                                .foregroundColor(DesignTokens.Colors.error)
+                                .transition(.opacity)
+                        }
+                    }
                     
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .textContentType(showSignUp ? .newPassword : .password)
+                    // Password Field
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                        SecureField("Password", text: $password)
+                            .font(DesignTokens.Typography.body)
+                            .padding(DesignTokens.Spacing.md)
+                            .background(DesignTokens.Colors.surfaceElevated)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
+                            .cornerRadius(DesignTokens.CornerRadius.md)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
+                                    .stroke(
+                                        passwordError != nil ? DesignTokens.Colors.error : DesignTokens.Colors.border,
+                                        lineWidth: 1
+                                    )
+                            )
+                            .textContentType(showSignUp ? .newPassword : .password)
+                            .onChange(of: password) { _, newValue in
+                                validatePassword(newValue)
+                            }
+                        
+                        if let passwordError = passwordError {
+                            Text(passwordError)
+                                .font(DesignTokens.Typography.caption)
+                                .foregroundColor(DesignTokens.Colors.error)
+                                .transition(.opacity)
+                        }
+                    }
                 }
                 
                 // Action Buttons
-                VStack(spacing: 12) {
+                VStack(spacing: DesignTokens.Spacing.md) {
+                    // Primary Action Button
                     Button {
+                        HapticManager.mediumTap()
                         Task {
                             if showSignUp {
                                 await authViewModel.signUp(email: email, password: password)
@@ -141,36 +211,52 @@ struct AuthenticationView: View {
                             }
                         }
                     } label: {
-                        if authViewModel.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
-                            Text(showSignUp ? "Sign Up" : "Sign In")
-                                .fontWeight(.semibold)
+                        HStack(spacing: DesignTokens.Spacing.sm) {
+                            if authViewModel.isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: DesignTokens.Colors.textPrimary))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Text(showSignUp ? "Create Account" : "Sign In")
+                                    .font(DesignTokens.Typography.bodyMedium)
+                            }
                         }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: DesignTokens.InteractionSize.comfortable)
+                        .background(
+                            isFormValid && !authViewModel.isLoading ? DesignTokens.Colors.accent : DesignTokens.Colors.surfaceElevated
+                        )
+                        .foregroundColor(
+                            isFormValid && !authViewModel.isLoading ? DesignTokens.Colors.textPrimary : DesignTokens.Colors.textTertiary
+                        )
+                        .cornerRadius(DesignTokens.CornerRadius.md)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .disabled(email.isEmpty || password.isEmpty || authViewModel.isLoading)
+                    .disabled(!isFormValid || authViewModel.isLoading)
                     
+                    // Toggle Sign Up/In
                     Button {
+                        HapticManager.lightTap()
                         showSignUp.toggle()
+                        // Clear validation errors when switching
+                        emailError = nil
+                        passwordError = nil
                     } label: {
                         Text(showSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                            .font(.footnote)
-                            .foregroundColor(.primary)
+                            .font(DesignTokens.Typography.footnote)
+                            .foregroundColor(DesignTokens.Colors.textSecondary)
                     }
                     
+                    // Forgot Password
                     if !showSignUp {
                         Button {
+                            HapticManager.lightTap()
                             Task {
                                 await authViewModel.resetPassword(email: email)
                             }
                         } label: {
                             Text("Forgot Password?")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
+                                .font(DesignTokens.Typography.footnote)
+                                .foregroundColor(DesignTokens.Colors.textTertiary)
                         }
                         .disabled(email.isEmpty)
                     }
@@ -179,25 +265,28 @@ struct AuthenticationView: View {
                 Spacer()
                 
                 // Terms and Privacy
-                VStack(spacing: 4) {
+                VStack(spacing: DesignTokens.Spacing.xs) {
                     Text("By continuing, you agree to our")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
                     
-                    HStack {
+                    HStack(spacing: DesignTokens.Spacing.xs) {
                         Link("Terms of Service", destination: URL(string: AppEnvironment.termsOfServiceURL)!)
                         Text("and")
                         Link("Privacy Policy", destination: URL(string: AppEnvironment.privacyPolicyURL)!)
                     }
-                    .font(.caption)
-                    .foregroundColor(.primary)
+                    .font(DesignTokens.Typography.caption)
+                    .foregroundColor(DesignTokens.Colors.accent)
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, DesignTokens.Spacing.lg)
+            .primaryBackground()
             .navigationBarHidden(true)
+            .preferredColorScheme(.dark)
         }
         .alert("Error", isPresented: $authViewModel.showError) {
             Button("OK") {
+                HapticManager.lightTap()
                 authViewModel.clearError()
             }
         } message: {
@@ -237,12 +326,6 @@ struct AuthenticationView: View {
         } else if password.count < 6 {
             passwordError = "Password must be at least 6 characters"
             isPasswordValid = false
-        } else if !password.contains(where: { $0.isLetter }) {
-            passwordError = "Password must contain at least one letter"
-            isPasswordValid = false
-        } else if !password.contains(where: { $0.isNumber }) {
-            passwordError = "Password must contain at least one number"
-            isPasswordValid = false
         } else {
             passwordError = nil
             isPasswordValid = true
@@ -252,4 +335,5 @@ struct AuthenticationView: View {
 
 #Preview {
     AuthenticationView()
+        .environmentObject(AuthViewModel())
 }
