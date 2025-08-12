@@ -69,6 +69,10 @@ class AuthViewModel: ObservableObject {
             currentUser = try await firebaseService.getUser(by: firebaseUID)
         } catch {
             print("Error loading user: \(error.localizedDescription)")
+            // If user document doesn't exist, create a new one
+            if let firebaseUser = authService.user {
+                await createNewUser(from: firebaseUser)
+            }
         }
     }
     
@@ -136,6 +140,15 @@ class AuthViewModel: ObservableObject {
         
         do {
             try await authService.signIn(email: email, password: password)
+            
+            // Fetch user data after successful sign in
+            guard let firebaseUser = authService.user else {
+                showErrorPrivate("Failed to get user information")
+                return
+            }
+            
+            // Load user data from Firestore
+            await loadUser(firebaseUID: firebaseUser.uid)
         } catch {
             showErrorPrivate("Sign in failed: \(error.localizedDescription)")
         }
@@ -202,7 +215,7 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    func completeOnboarding(username: String, displayName: String, avatarData: Data? = nil) async {
+    func completeOnboarding(firstName: String, surname: String, username: String, displayName: String, avatarData: Data? = nil) async {
         guard var user = currentUser else {
             showErrorPrivate("No user found")
             return
@@ -220,6 +233,8 @@ class AuthViewModel: ObservableObject {
                 user.avatarURL = avatarURL
             }
             
+            user.firstName = firstName
+            user.surname = surname
             user.username = username
             user.displayName = displayName
             user.isOnboarded = true
@@ -238,10 +253,47 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
+    func updateUserProfile(firstName: String, surname: String, username: String, displayName: String, avatarData: Data? = nil) async {
+        guard var user = currentUser else {
+            showErrorPrivate("No user found")
+            return
+        }
+        
+        isLoading = true
+        
+        do {
+            if let avatarData = avatarData {
+                let avatarURL = try await firebaseService.uploadMedia(
+                    data: avatarData,
+                    path: "avatars/\(user.firebaseUID).jpg",
+                    contentType: "image/jpeg"
+                )
+                user.avatarURL = avatarURL
+            }
+            
+            user.firstName = firstName
+            user.surname = surname
+            user.username = username
+            user.displayName = displayName
+            
+            try await firebaseService.updateUser(user)
+            currentUser = user
+            
+            print("✅ Profile updated successfully")
+            
+        } catch {
+            showErrorPrivate("Failed to update profile: \(error.localizedDescription)")
+        }
+        
+        isLoading = false
+    }
+    
     private func createNewUser(from firebaseUser: FirebaseAuth.User) async {
         let user = User(
             firebaseUID: firebaseUser.uid,
             email: firebaseUser.email ?? "",
+            firstName: "",
+            surname: "",
             username: "",
             displayName: firebaseUser.displayName ?? ""
         )
@@ -270,6 +322,11 @@ class AuthViewModel: ObservableObject {
     }
     
     var needsOnboarding: Bool {
+        // If we're authenticated but have no user data, we need onboarding
+        if isAuthenticated && currentUser == nil {
+            return true
+        }
+        
         guard let user = currentUser else { return false }
         return !user.isOnboarded
     }

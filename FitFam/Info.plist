@@ -13,9 +13,11 @@
 			<string>GoogleSignIn</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.543064302513-jlrrnk4c94i5fd3cie06403k8e2q3tsc</string>
+				<string>com.googleusercontent.apps.775591998674-b1hcidicpkqnmpu0ige82q7b6tp0dekn</string>
 			</array>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera to take photos for workout check-ins and sharing fitness progress with friends.</string>
 </dict>
 </plist>

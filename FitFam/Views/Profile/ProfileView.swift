@@ -3,6 +3,8 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSettings = false
+    @State private var showEditProfile = false
+    @StateObject private var streakManager = StreakManager()
     
     var body: some View {
         NavigationView {
@@ -36,18 +38,30 @@ struct ProfileView: View {
                             Text("@\(authViewModel.currentUser?.username ?? "username")")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
+                            
+                            Text(authViewModel.currentUser?.email ?? "No email")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                         
-                        // Bio stats
+                        // Bio stats with streak celebration trigger
                         HStack(spacing: 24) {
-                            StatColumn(number: "\(authViewModel.currentUser?.currentStreak ?? 0)", label: "Streak")
+                            Button(action: {
+                                // Demo: Trigger streak celebration on tap
+                                let streak = authViewModel.currentUser?.currentStreak ?? 1
+                                streakManager.celebrateStreak(streak)
+                            }) {
+                                StatColumn(number: "\(authViewModel.currentUser?.currentStreak ?? 0)", label: "Streak")
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
                             StatColumn(number: "\(authViewModel.currentUser?.totalWorkouts ?? 0)", label: "Workouts")
                             StatColumn(number: "12", label: "Friends")
                         }
                         
                         // Edit Profile Button
                         Button(action: {
-                            // TODO: Navigate to edit profile
+                            showEditProfile = true
                         }) {
                             Text("Edit Profile")
                                 .font(.subheadline)
@@ -146,6 +160,19 @@ struct ProfileView: View {
             SettingsView()
                 .environmentObject(authViewModel)
         }
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileView()
+                .environmentObject(authViewModel)
+        }
+        .overlay(
+            StreakCelebrationView(
+                streakCount: streakManager.currentStreak,
+                isVisible: streakManager.showCelebration,
+                onComplete: {
+                    streakManager.dismissCelebration()
+                }
+            )
+        )
     }
 }
 

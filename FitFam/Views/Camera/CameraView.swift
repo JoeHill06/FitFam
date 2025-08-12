@@ -67,37 +67,41 @@ struct PostComposerView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     // Image preview
                     imagePreviewSection
                     
                     // Caption input
                     captionSection
                     
-                    // Location and visibility options
-                    optionsSection
+                    // Simplified options
+                    simpleOptionsSection
                     
-                    Spacer(minLength: 100)
+                    Spacer(minLength: 80)
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
             }
-            .navigationTitle("New Post")
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Share Workout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         onDismiss()
                     }
+                    .foregroundColor(.red)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Post") {
+                    Button("Share") {
                         Task {
                             await postWorkout()
                         }
                     }
                     .disabled(isPosting)
-                    .fontWeight(.semibold)
+                    .fontWeight(.bold)
+                    .foregroundColor(.red)
                 }
             }
         }
@@ -106,88 +110,96 @@ struct PostComposerView: View {
     // MARK: - Image Preview
     
     private var imagePreviewSection: some View {
-        VStack(spacing: 16) {
-            if let backImage = backImage {
-                // Main back camera image
-                Image(uiImage: backImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 300)
-                    .clipped()
-                    .cornerRadius(12)
-                
-                // Front camera image (smaller)
-                if let frontImage = frontImage {
-                    HStack {
-                        Image(uiImage: frontImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 100)
-                            .clipped()
-                            .cornerRadius(8)
-                        
-                        Spacer()
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                if let backImage = backImage {
+                    // Main back camera image (full width, proper aspect ratio)
+                    Image(uiImage: backImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geometry.size.width, height: geometry.size.width * 1.2)
+                        .clipped()
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    
+                    // Front camera image (overlay in corner)
+                    if let frontImage = frontImage {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Image(uiImage: frontImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 100, height: 120)
+                                    .clipped()
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white, lineWidth: 3)
+                                    )
+                                    .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 3)
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 20)
+                        .padding(.trailing, 20)
                     }
                 }
             }
         }
+        .frame(height: UIScreen.main.bounds.width * 1.2)
     }
     
     // MARK: - Caption Section
     
     private var captionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Caption")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Share your experience")
                 .font(.headline)
+                .foregroundColor(.primary)
             
             TextField("How was your workout?", text: $caption, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(DarkTextFieldStyle())
                 .lineLimit(3...6)
+                .submitLabel(.done)
         }
+        .padding(.horizontal, 4)
     }
     
-    // MARK: - Options Section
+    // MARK: - Simple Options Section
     
-    private var optionsSection: some View {
-        VStack(spacing: 16) {
-            // Location toggle
-            HStack {
-                Image(systemName: "location.fill")
-                    .foregroundColor(.blue)
-                
-                Text("Add Location")
-                    .font(.body)
-                
-                Spacer()
-                
-                Button("Add") {
-                    showLocationPicker = true
-                }
-                .font(.caption)
-                .foregroundColor(.blue)
-            }
-            .padding()
-            .background(Color.secondary.opacity(0.1))
-            .cornerRadius(8)
-            
-            // Visibility setting
-            HStack {
+    private var simpleOptionsSection: some View {
+        VStack(spacing: 12) {
+            // Simple visibility indicator
+            HStack(spacing: 12) {
                 Image(systemName: "person.3.fill")
-                    .foregroundColor(.green)
+                    .foregroundColor(.red)
+                    .font(.title3)
                 
-                Text("Visible to Friends")
-                    .font(.body)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sharing with friends")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text("Only your FitFam can see this")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
-                Text("Friends Only")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.title3)
             }
-            .padding()
-            .background(Color.secondary.opacity(0.1))
-            .cornerRadius(8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+            )
         }
+        .padding(.horizontal, 4)
     }
     
     // MARK: - Post Logic

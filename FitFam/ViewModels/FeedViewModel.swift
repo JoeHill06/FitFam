@@ -125,6 +125,10 @@ class FeedViewModel: ObservableObject {
         guard let currentUser = Auth.auth().currentUser,
               let postId = post.id else { return }
         
+        // Immediate haptic and sound feedback for social interaction
+        HapticManager.shared.socialInteraction()
+        SoundManager.shared.socialInteraction()
+        
         let cheerData: [String: Any] = [
             "postID": postId,
             "userID": currentUser.uid,

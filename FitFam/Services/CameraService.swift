@@ -514,6 +514,10 @@ class CameraService: NSObject, ObservableObject {
     func capturePhoto() async -> (frontImage: UIImage?, backImage: UIImage?) {
         print("📸 Capture photo requested")
         
+        // Immediate haptic and sound feedback for psychological satisfaction
+        HapticManager.shared.photoCapture()
+        SoundManager.shared.cameraCapture()
+        
         guard !isCapturing else {
             print("❌ Already capturing, ignoring request")
             return (nil, nil)
