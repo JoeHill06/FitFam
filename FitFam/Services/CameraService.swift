@@ -37,6 +37,7 @@ class CameraService: NSObject, ObservableObject {
     private var backPreviewLayer: AVCaptureVideoPreviewLayer?
     
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
+    private var isStoppingSession = false
     private var isMultiCamSupported: Bool {
         AVCaptureMultiCamSession.isMultiCamSupported
     }
@@ -179,6 +180,11 @@ class CameraService: NSObject, ObservableObject {
         }
         
         Task { [weak self] in
+            // Wait for any stopping operation to complete
+            while self?.isStoppingSession == true {
+                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+            }
+            
             if self?.isSessionRunning == true {
                 print("ℹ️ Session already running - nothing to do")
                 return
@@ -220,9 +226,14 @@ class CameraService: NSObject, ObservableObject {
     }
     
     private func stopSessionAsync() async {
+        await MainActor.run {
+            self.isStoppingSession = true
+        }
+        
         guard captureSession.isRunning else {
             await MainActor.run {
                 self.isSessionRunning = false
+                self.isStoppingSession = false
             }
             return
         }
@@ -232,6 +243,7 @@ class CameraService: NSObject, ObservableObject {
         
         await MainActor.run {
             self.isSessionRunning = false
+            self.isStoppingSession = false
         }
         
         print("✅ Camera session stopped")

@@ -255,6 +255,15 @@ struct DualCameraPreviewView: View {
                                     .padding(.top, 8)
                             }
                         )
+                        .onAppear {
+                            // Retry starting the session after a short delay if stuck
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                if cameraService.isSessionConfigured && !cameraService.isSessionRunning {
+                                    print("🔄 Retrying camera session start...")
+                                    cameraService.startSession()
+                                }
+                            }
+                        }
                 } else {
                     // Initial loading state
                     CameraLoadingView()
