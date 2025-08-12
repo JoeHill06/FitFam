@@ -38,6 +38,7 @@ class CameraService: NSObject, ObservableObject {
     
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
     private var isStoppingSession = false
+    private var sessionTask: Task<Void, Never>?
     private var isMultiCamSupported: Bool {
         AVCaptureMultiCamSession.isMultiCamSupported
     }
@@ -179,11 +180,17 @@ class CameraService: NSObject, ObservableObject {
             return
         }
         
-        Task { [weak self] in
+        // Cancel any existing session task
+        sessionTask?.cancel()
+        
+        sessionTask = Task { [weak self] in
             // Wait for any stopping operation to complete
             while self?.isStoppingSession == true {
                 try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
             }
+            
+            // Check if task was cancelled
+            guard !Task.isCancelled else { return }
             
             if self?.isSessionRunning == true {
                 print("ℹ️ Session already running - nothing to do")
@@ -209,17 +216,38 @@ class CameraService: NSObject, ObservableObject {
             return
         }
         
-        captureSession.startRunning()
-        
-        await MainActor.run {
-            self.isSessionRunning = true
+        // Start session on session queue for better reliability
+        await withCheckedContinuation { continuation in
+            sessionQueue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume()
+                    return
+                }
+                
+                if !self.captureSession.isRunning {
+                    self.captureSession.startRunning()
+                }
+                continuation.resume()
+            }
         }
         
-        print("✅ Pre-configured session started instantly!")
+        // Verify session started and update state
+        await MainActor.run {
+            self.isSessionRunning = self.captureSession.isRunning
+        }
+        
+        if captureSession.isRunning {
+            print("✅ Pre-configured session started instantly!")
+        } else {
+            print("❌ Failed to start pre-configured session")
+        }
     }
     
     /// Stop the camera session
     func stopSession() {
+        // Cancel any running session start task
+        sessionTask?.cancel()
+        
         Task { [weak self] in
             await self?.stopSessionAsync()
         }
@@ -239,7 +267,17 @@ class CameraService: NSObject, ObservableObject {
         }
         
         print("⏹️ Stopping camera session...")
-        captureSession.stopRunning()
+        
+        // Stop running on session queue for better reliability
+        await withCheckedContinuation { continuation in
+            sessionQueue.async { [weak self] in
+                self?.captureSession.stopRunning()
+                continuation.resume()
+            }
+        }
+        
+        // Give the session a moment to fully stop
+        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
         
         await MainActor.run {
             self.isSessionRunning = false

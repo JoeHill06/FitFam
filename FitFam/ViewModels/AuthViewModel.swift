@@ -240,14 +240,27 @@ class AuthViewModel: ObservableObject {
             user.isOnboarded = true
             
             try await firebaseService.updateUser(user)
-            currentUser = user
+            
+            // Update the current user state on main thread
+            await MainActor.run {
+                self.currentUser = user
+                self.objectWillChange.send()
+            }
             
             print("✅ Onboarding completed for user: \(user.username)")
             print("✅ User isOnboarded: \(user.isOnboarded)")
             print("✅ needsOnboarding: \(needsOnboarding)")
             
         } catch {
+            print("❌ Onboarding update failed: \(error.localizedDescription)")
             showErrorPrivate("Failed to complete onboarding: \(error.localizedDescription)")
+            
+            // Reset the user state if update failed
+            await MainActor.run {
+                user.isOnboarded = false
+                self.currentUser = user
+                self.objectWillChange.send()
+            }
         }
         
         isLoading = false
