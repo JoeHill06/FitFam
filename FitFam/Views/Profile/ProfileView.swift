@@ -61,9 +61,11 @@ struct ProfileView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .tokenSurface(
+                        backgroundColor: DesignTokens.SurfaceColors.elevated,
+                        cornerRadius: DesignTokens.BorderRadius.lg,
+                        shadow: DesignTokens.Shadows.sm
+                    )
                     
                     // Quick Stats
                     VStack(alignment: .leading, spacing: 16) {
@@ -79,9 +81,11 @@ struct ProfileView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .tokenSurface(
+                        backgroundColor: DesignTokens.SurfaceColors.elevated,
+                        cornerRadius: DesignTokens.BorderRadius.lg,
+                        shadow: DesignTokens.Shadows.sm
+                    )
                     
                     // Recent Activity
                     VStack(alignment: .leading, spacing: 16) {
@@ -107,9 +111,11 @@ struct ProfileView: View {
                         .padding(.top, 8)
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .tokenSurface(
+                        backgroundColor: DesignTokens.SurfaceColors.elevated,
+                        cornerRadius: DesignTokens.BorderRadius.lg,
+                        shadow: DesignTokens.Shadows.sm
+                    )
                     
                     // Settings Section
                     VStack(spacing: 12) {
@@ -123,26 +129,33 @@ struct ProfileView: View {
                         Button(action: {
                             showSignOutConfirmation = true
                         }) {
-                            HStack {
+                            HStack(spacing: DesignTokens.Spacing.md) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    .foregroundColor(.red)
+                                    .foregroundColor(DesignTokens.SemanticColors.error)
+                                    .font(.system(size: 18, weight: .medium))
+                                
                                 Text("Sign Out")
-                                    .foregroundColor(.red)
-                                    .fontWeight(.medium)
+                                    .foregroundColor(DesignTokens.SemanticColors.error)
+                                    .font(DesignTokens.Typography.Styles.bodyMedium)
+                                
                                 Spacer()
                             }
-                            .padding()
+                            .frame(minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                            .padding(.horizontal, DesignTokens.Spacing.md)
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .tokenSurface(
+                        backgroundColor: DesignTokens.SurfaceColors.elevated,
+                        cornerRadius: DesignTokens.BorderRadius.lg,
+                        shadow: DesignTokens.Shadows.sm
+                    )
                 }
-                .padding()
+                .padding(DesignTokens.Spacing.md)
             }
-            .background(Color(.systemGroupedBackground))
+            .tokenBackground(DesignTokens.BackgroundColors.secondary)
             .navigationTitle("Profile")
+            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()

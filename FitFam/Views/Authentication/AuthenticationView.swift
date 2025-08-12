@@ -27,15 +27,15 @@ struct AuthenticationView: View {
                 VStack(spacing: DesignTokens.Spacing.md) {
                     Image(systemName: "figure.strengthtraining.functional")
                         .font(.system(size: 60))
-                        .foregroundColor(DesignTokens.Colors.accent)
+                        .foregroundColor(DesignTokens.BrandColors.primary)
                     
                     Text("FitFam")
-                        .font(DesignTokens.Typography.largeTitle)
-                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                        .font(DesignTokens.Typography.Styles.largeTitle)
+                        .foregroundColor(DesignTokens.TextColors.primary)
                     
                     Text("Stay motivated with friends")
-                        .font(DesignTokens.Typography.subheadline)
-                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                        .font(DesignTokens.Typography.Styles.subheadline)
+                        .foregroundColor(DesignTokens.TextColors.secondary)
                 }
                 .padding(.bottom, DesignTokens.Spacing.xl)
                 
@@ -48,7 +48,7 @@ struct AuthenticationView: View {
                                 await authViewModel.signUpWithGoogle()
                             }
                         }
-                        .frame(height: DesignTokens.InteractionSize.comfortable)
+                        .frame(height: DesignTokens.Accessibility.recommendedTapTarget)
                     } else {
                         // Google Sign In - Official Button  
                         GoogleSignInButton(scheme: .dark, style: .wide, state: .normal) {
@@ -56,30 +56,22 @@ struct AuthenticationView: View {
                                 await authViewModel.signInWithGoogle()
                             }
                         }
-                        .frame(height: DesignTokens.InteractionSize.comfortable)
+                        .frame(height: DesignTokens.Accessibility.recommendedTapTarget)
                     }
                     
                     // Phone Sign In Button
                     Button {
-                        HapticManager.lightTap()
                         showPhoneSignIn.toggle()
                     } label: {
                         HStack(spacing: DesignTokens.Spacing.sm) {
                             Image(systemName: "phone.fill")
                                 .font(.system(size: 16, weight: .medium))
                             Text("Continue with Phone")
-                                .font(DesignTokens.Typography.bodyMedium)
+                                .font(DesignTokens.Typography.Styles.bodyMedium)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: DesignTokens.InteractionSize.comfortable)
-                        .background(DesignTokens.Colors.surfaceElevated)
-                        .foregroundColor(DesignTokens.Colors.textPrimary)
-                        .cornerRadius(DesignTokens.CornerRadius.md)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
-                                .stroke(DesignTokens.Colors.border, lineWidth: 1)
-                        )
                     }
+                    .tokenSecondaryButton()
                     .disabled(authViewModel.isLoading)
                 }
                 
@@ -87,54 +79,49 @@ struct AuthenticationView: View {
                 if showPhoneSignIn {
                     VStack(spacing: DesignTokens.Spacing.md) {
                         TextField("Phone Number (e.g., +1234567890)", text: $phoneNumber)
-                            .font(DesignTokens.Typography.body)
+                            .font(DesignTokens.Typography.Styles.body)
                             .padding(DesignTokens.Spacing.md)
-                            .background(DesignTokens.Colors.surfaceElevated)
-                            .foregroundColor(DesignTokens.Colors.textPrimary)
-                            .cornerRadius(DesignTokens.CornerRadius.md)
+                            .background(DesignTokens.SurfaceColors.elevated)
+                            .foregroundColor(DesignTokens.TextColors.primary)
+                            .cornerRadius(DesignTokens.BorderRadius.md)
                             .overlay(
-                                RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
-                                    .stroke(DesignTokens.Colors.border, lineWidth: 1)
+                                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
+                                    .stroke(DesignTokens.BorderColors.primary, lineWidth: 1)
                             )
                             .keyboardType(.phonePad)
                         
                         Button {
-                            HapticManager.mediumTap()
                             Task {
                                 await authViewModel.signInWithPhone(phoneNumber: phoneNumber)
                             }
                         } label: {
                             Text("Send Verification Code")
-                                .font(DesignTokens.Typography.bodyMedium)
+                                .font(DesignTokens.Typography.Styles.bodyMedium)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: DesignTokens.InteractionSize.comfortable)
-                                .background(phoneNumber.isEmpty ? DesignTokens.Colors.surfaceElevated : DesignTokens.Colors.accent)
-                                .foregroundColor(phoneNumber.isEmpty ? DesignTokens.Colors.textTertiary : DesignTokens.Colors.textPrimary)
-                                .cornerRadius(DesignTokens.CornerRadius.md)
                         }
-                        .disabled(phoneNumber.isEmpty || authViewModel.isLoading)
+                        .tokenPrimaryButton(isDisabled: phoneNumber.isEmpty || authViewModel.isLoading)
                     }
                     .transition(.asymmetric(
                         insertion: .scale.combined(with: .opacity),
                         removal: .scale.combined(with: .opacity)
                     ))
-                    .animation(DesignTokens.Animation.medium, value: showPhoneSignIn)
+                    .animation(DesignTokens.Animation.normal, value: showPhoneSignIn)
                 }
                 
                 // Divider
                 HStack {
                     Rectangle()
                         .frame(height: 1)
-                        .foregroundColor(DesignTokens.Colors.separator)
+                        .foregroundColor(DesignTokens.BorderColors.secondary)
                     
                     Text("or")
-                        .font(DesignTokens.Typography.caption)
-                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                        .font(DesignTokens.Typography.Styles.caption1)
+                        .foregroundColor(DesignTokens.TextColors.secondary)
                         .padding(.horizontal, DesignTokens.Spacing.sm)
                     
                     Rectangle()
                         .frame(height: 1)
-                        .foregroundColor(DesignTokens.Colors.separator)
+                        .foregroundColor(DesignTokens.BorderColors.secondary)
                 }
                 
                 // Email/Password Form
@@ -142,15 +129,15 @@ struct AuthenticationView: View {
                     // Email Field
                     VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                         TextField("Email", text: $email)
-                            .font(DesignTokens.Typography.body)
+                            .font(DesignTokens.Typography.Styles.body)
                             .padding(DesignTokens.Spacing.md)
-                            .background(DesignTokens.Colors.surfaceElevated)
-                            .foregroundColor(DesignTokens.Colors.textPrimary)
-                            .cornerRadius(DesignTokens.CornerRadius.md)
+                            .background(DesignTokens.SurfaceColors.elevated)
+                            .foregroundColor(DesignTokens.TextColors.primary)
+                            .cornerRadius(DesignTokens.BorderRadius.md)
                             .overlay(
-                                RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
+                                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
                                     .stroke(
-                                        emailError != nil ? DesignTokens.Colors.error : DesignTokens.Colors.border,
+                                        emailError != nil ? DesignTokens.SemanticColors.error : DesignTokens.BorderColors.primary,
                                         lineWidth: 1
                                     )
                             )
@@ -163,8 +150,8 @@ struct AuthenticationView: View {
                         
                         if let emailError = emailError {
                             Text(emailError)
-                                .font(DesignTokens.Typography.caption)
-                                .foregroundColor(DesignTokens.Colors.error)
+                                .font(DesignTokens.Typography.Styles.caption1)
+                                .foregroundColor(DesignTokens.SemanticColors.error)
                                 .transition(.opacity)
                         }
                     }
@@ -172,15 +159,15 @@ struct AuthenticationView: View {
                     // Password Field
                     VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                         SecureField("Password", text: $password)
-                            .font(DesignTokens.Typography.body)
+                            .font(DesignTokens.Typography.Styles.body)
                             .padding(DesignTokens.Spacing.md)
-                            .background(DesignTokens.Colors.surfaceElevated)
-                            .foregroundColor(DesignTokens.Colors.textPrimary)
-                            .cornerRadius(DesignTokens.CornerRadius.md)
+                            .background(DesignTokens.SurfaceColors.elevated)
+                            .foregroundColor(DesignTokens.TextColors.primary)
+                            .cornerRadius(DesignTokens.BorderRadius.md)
                             .overlay(
-                                RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.md)
+                                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
                                     .stroke(
-                                        passwordError != nil ? DesignTokens.Colors.error : DesignTokens.Colors.border,
+                                        passwordError != nil ? DesignTokens.SemanticColors.error : DesignTokens.BorderColors.primary,
                                         lineWidth: 1
                                     )
                             )
@@ -191,8 +178,8 @@ struct AuthenticationView: View {
                         
                         if let passwordError = passwordError {
                             Text(passwordError)
-                                .font(DesignTokens.Typography.caption)
-                                .foregroundColor(DesignTokens.Colors.error)
+                                .font(DesignTokens.Typography.Styles.caption1)
+                                .foregroundColor(DesignTokens.SemanticColors.error)
                                 .transition(.opacity)
                         }
                     }
@@ -202,7 +189,6 @@ struct AuthenticationView: View {
                 VStack(spacing: DesignTokens.Spacing.md) {
                     // Primary Action Button
                     Button {
-                        HapticManager.mediumTap()
                         Task {
                             if showSignUp {
                                 await authViewModel.signUp(email: email, password: password)
@@ -214,49 +200,39 @@ struct AuthenticationView: View {
                         HStack(spacing: DesignTokens.Spacing.sm) {
                             if authViewModel.isLoading {
                                 ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: DesignTokens.Colors.textPrimary))
+                                    .progressViewStyle(CircularProgressViewStyle(tint: DesignTokens.TextColors.primary))
                                     .scaleEffect(0.8)
                             } else {
                                 Text(showSignUp ? "Create Account" : "Sign In")
-                                    .font(DesignTokens.Typography.bodyMedium)
+                                    .font(DesignTokens.Typography.Styles.bodyMedium)
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: DesignTokens.InteractionSize.comfortable)
-                        .background(
-                            isFormValid && !authViewModel.isLoading ? DesignTokens.Colors.accent : DesignTokens.Colors.surfaceElevated
-                        )
-                        .foregroundColor(
-                            isFormValid && !authViewModel.isLoading ? DesignTokens.Colors.textPrimary : DesignTokens.Colors.textTertiary
-                        )
-                        .cornerRadius(DesignTokens.CornerRadius.md)
                     }
-                    .disabled(!isFormValid || authViewModel.isLoading)
+                    .tokenPrimaryButton(isDisabled: !isFormValid || authViewModel.isLoading)
                     
                     // Toggle Sign Up/In
                     Button {
-                        HapticManager.lightTap()
                         showSignUp.toggle()
                         // Clear validation errors when switching
                         emailError = nil
                         passwordError = nil
                     } label: {
                         Text(showSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                            .font(DesignTokens.Typography.footnote)
-                            .foregroundColor(DesignTokens.Colors.textSecondary)
+                            .font(DesignTokens.Typography.Styles.footnote)
+                            .foregroundColor(DesignTokens.TextColors.secondary)
                     }
                     
                     // Forgot Password
                     if !showSignUp {
                         Button {
-                            HapticManager.lightTap()
                             Task {
                                 await authViewModel.resetPassword(email: email)
                             }
                         } label: {
                             Text("Forgot Password?")
-                                .font(DesignTokens.Typography.footnote)
-                                .foregroundColor(DesignTokens.Colors.textTertiary)
+                                .font(DesignTokens.Typography.Styles.footnote)
+                                .foregroundColor(DesignTokens.TextColors.tertiary)
                         }
                         .disabled(email.isEmpty)
                     }
@@ -267,20 +243,20 @@ struct AuthenticationView: View {
                 // Terms and Privacy
                 VStack(spacing: DesignTokens.Spacing.xs) {
                     Text("By continuing, you agree to our")
-                        .font(DesignTokens.Typography.caption)
-                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                        .font(DesignTokens.Typography.Styles.caption1)
+                        .foregroundColor(DesignTokens.TextColors.tertiary)
                     
                     HStack(spacing: DesignTokens.Spacing.xs) {
                         Link("Terms of Service", destination: URL(string: AppEnvironment.termsOfServiceURL)!)
                         Text("and")
                         Link("Privacy Policy", destination: URL(string: AppEnvironment.privacyPolicyURL)!)
                     }
-                    .font(DesignTokens.Typography.caption)
-                    .foregroundColor(DesignTokens.Colors.accent)
+                    .font(DesignTokens.Typography.Styles.caption1)
+                    .foregroundColor(DesignTokens.BrandColors.primary)
                 }
             }
-            .padding(.horizontal, 24)
-            .background(Color.black)
+            .padding(.horizontal, DesignTokens.Spacing.lg)
+            .tokenBackground(DesignTokens.BackgroundColors.primary)
             .navigationBarHidden(true)
             .preferredColorScheme(.dark)
         }

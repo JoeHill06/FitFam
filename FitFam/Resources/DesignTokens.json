@@ -1,0 +1,215 @@
+{
+  "colors": {
+    "brand": {
+      "primary": {
+        "light": "#F34236",
+        "dark": "#FF5A4D"
+      },
+      "primaryVariant": {
+        "light": "#D73027",
+        "dark": "#FF6B5B"
+      },
+      "secondary": {
+        "light": "#2196F3",
+        "dark": "#42A5F5"
+      }
+    },
+    "semantic": {
+      "success": {
+        "light": "#4CAF50",
+        "dark": "#66BB6A"
+      },
+      "warning": {
+        "light": "#FF9800",
+        "dark": "#FFB74D"
+      },
+      "error": {
+        "light": "#F44336",
+        "dark": "#EF5350"
+      },
+      "info": {
+        "light": "#2196F3",
+        "dark": "#42A5F5"
+      }
+    },
+    "neutral": {
+      "background": {
+        "primary": {
+          "light": "#FFFFFF",
+          "dark": "#0D0D0D"
+        },
+        "secondary": {
+          "light": "#F5F5F5",
+          "dark": "#1A1A1A"
+        },
+        "tertiary": {
+          "light": "#EEEEEE",
+          "dark": "#262626"
+        }
+      },
+      "surface": {
+        "elevated": {
+          "light": "#FFFFFF",
+          "dark": "#1F1F1F"
+        },
+        "pressed": {
+          "light": "#F0F0F0",
+          "dark": "#2D2D2D"
+        }
+      },
+      "border": {
+        "primary": {
+          "light": "#E0E0E0",
+          "dark": "#404040"
+        },
+        "secondary": {
+          "light": "#BDBDBD",
+          "dark": "#525252"
+        }
+      },
+      "text": {
+        "primary": {
+          "light": "#212121",
+          "dark": "#FFFFFF"
+        },
+        "secondary": {
+          "light": "#757575",
+          "dark": "#B3B3B3"
+        },
+        "tertiary": {
+          "light": "#9E9E9E",
+          "dark": "#808080"
+        },
+        "disabled": {
+          "light": "#BDBDBD",
+          "dark": "#525252"
+        }
+      }
+    }
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "SF Pro Display",
+      "secondary": "SF Pro Text",
+      "monospace": "SF Mono"
+    },
+    "fontSizes": {
+      "xs": 12,
+      "sm": 14,
+      "base": 16,
+      "lg": 18,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 30,
+      "4xl": 36,
+      "5xl": 48,
+      "6xl": 60
+    },
+    "fontWeights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700,
+      "heavy": 800
+    },
+    "lineHeights": {
+      "tight": 1.2,
+      "normal": 1.4,
+      "relaxed": 1.6,
+      "loose": 1.8
+    }
+  },
+  "spacing": {
+    "scale": "4pt",
+    "values": {
+      "none": 0,
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32,
+      "2xl": 40,
+      "3xl": 48,
+      "4xl": 64,
+      "5xl": 80,
+      "6xl": 96
+    }
+  },
+  "borderRadius": {
+    "none": 0,
+    "xs": 2,
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "xl": 16,
+    "2xl": 20,
+    "3xl": 24,
+    "full": 9999
+  },
+  "shadows": {
+    "none": {
+      "x": 0,
+      "y": 0,
+      "blur": 0,
+      "spread": 0,
+      "color": "transparent"
+    },
+    "sm": {
+      "x": 0,
+      "y": 1,
+      "blur": 2,
+      "spread": 0,
+      "color": "#00000010"
+    },
+    "md": {
+      "x": 0,
+      "y": 4,
+      "blur": 6,
+      "spread": -1,
+      "color": "#00000010"
+    },
+    "lg": {
+      "x": 0,
+      "y": 10,
+      "blur": 15,
+      "spread": -3,
+      "color": "#00000010"
+    },
+    "xl": {
+      "x": 0,
+      "y": 20,
+      "blur": 25,
+      "spread": -5,
+      "color": "#00000025"
+    }
+  },
+  "animation": {
+    "duration": {
+      "instant": 0,
+      "fast": 150,
+      "normal": 300,
+      "slow": 500,
+      "slower": 750
+    },
+    "easing": {
+      "linear": [0.0, 0.0, 1.0, 1.0],
+      "ease": [0.25, 0.1, 0.25, 1.0],
+      "easeIn": [0.42, 0.0, 1.0, 1.0],
+      "easeOut": [0.0, 0.0, 0.58, 1.0],
+      "easeInOut": [0.42, 0.0, 0.58, 1.0],
+      "spring": [0.5, 1.75, 0.75, 1.25]
+    }
+  },
+  "accessibility": {
+    "minimumTapTarget": 44,
+    "recommendedTapTarget": 48,
+    "largeTapTarget": 56
+  },
+  "breakpoints": {
+    "mobile": 375,
+    "tablet": 768,
+    "desktop": 1024,
+    "large": 1440
+  }
+}
