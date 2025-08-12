@@ -17,7 +17,5 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>This app uses the camera to take photos for workout check-ins and sharing fitness progress with friends.</string>
 </dict>
 </plist>

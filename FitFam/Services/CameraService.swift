@@ -12,6 +12,7 @@ class CameraService: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var isAuthorized = false
     @Published var isSessionRunning = false
+    @Published var isSessionConfigured = false // Track if session is configured but not necessarily running
     @Published var captureMode: CaptureMode = .photo
     @Published var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var isCapturing = false
@@ -31,7 +32,7 @@ class CameraService: NSObject, ObservableObject {
     private let frontVideoOutput = AVCaptureVideoDataOutput()
     private let backVideoOutput = AVCaptureVideoDataOutput()
     
-    // Preview layers
+    // Preview layers - Pre-create for faster access
     private var frontPreviewLayer: AVCaptureVideoPreviewLayer?
     private var backPreviewLayer: AVCaptureVideoPreviewLayer?
     
@@ -39,6 +40,10 @@ class CameraService: NSObject, ObservableObject {
     private var isMultiCamSupported: Bool {
         AVCaptureMultiCamSession.isMultiCamSupported
     }
+    
+    // Cache camera devices for faster access
+    private var frontCameraDevice: AVCaptureDevice?
+    private var backCameraDevice: AVCaptureDevice?
     
     // Keep references to photo capture delegates to prevent deallocation
     private var photoCaptureInProgress = Set<PhotoCaptureDelegate>()
@@ -84,7 +89,29 @@ class CameraService: NSObject, ObservableObject {
     // MARK: - Initialization
     override init() {
         super.init()
+        // Pre-cache camera devices immediately for faster session setup
+        Task {
+            await precacheCameraDevices()
+        }
         checkCameraAuthorization()
+    }
+    
+    /// Prepare session configuration and start it for instant loading
+    func prepareSession() async {
+        print("🚀 Pre-configuring and starting camera session for instant loading...")
+        
+        guard isAuthorized else {
+            print("❌ Cannot prepare session - camera not authorized")
+            return
+        }
+        
+        guard !isSessionConfigured else {
+            print("ℹ️ Camera session already configured")
+            return
+        }
+        
+        // Configure and start the session immediately for instant loading
+        await configureSession(startRunning: true)
     }
     
     // MARK: - Authorization
@@ -98,6 +125,10 @@ class CameraService: NSObject, ObservableObject {
         case .authorized:
             print("✅ Camera access authorized")
             isAuthorized = true
+            // Immediately prepare session when already authorized
+            Task {
+                await prepareSession()
+            }
         case .notDetermined:
             print("❓ Camera access not determined - requesting...")
             requestCameraAuthorization()
@@ -116,45 +147,94 @@ class CameraService: NSObject, ObservableObject {
     /// Request camera permission from user
     private func requestCameraAuthorization() {
         AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self?.isAuthorized = granted
+                // If authorized, prepare the session immediately
+                if granted {
+                    await self?.prepareSession()
+                }
             }
         }
     }
     
     // MARK: - Session Management
     
-    /// Configure and start the camera session
+    /// Start the camera session (configure first if needed)
     func startSession() {
         print("🎥 Starting camera session...")
         print("🔐 Camera authorized: \(isAuthorized)")
+        print("🔄 Session currently running: \(isSessionRunning)")
+        print("⚙️ Session configured: \(isSessionConfigured)")
         
         guard isAuthorized else {
             print("❌ Camera not authorized")
-            DispatchQueue.main.async {
-                self.error = .notAuthorized
-            }
+            error = .notAuthorized
             return
         }
         
-        sessionQueue.async { [weak self] in
-            self?.configureSession()
+        // Don't start if already running
+        guard !isSessionRunning else {
+            print("ℹ️ Camera session already running, skipping start")
+            return
         }
+        
+        Task { [weak self] in
+            if self?.isSessionRunning == true {
+                print("ℹ️ Session already running - nothing to do")
+                return
+            }
+            
+            if self?.isSessionConfigured == true {
+                // Session already configured - just start it
+                await self?.startConfiguredSession()
+            } else {
+                // Configure and start
+                await self?.configureSession(startRunning: true)
+            }
+        }
+    }
+    
+    /// Start an already configured session
+    private func startConfiguredSession() async {
+        print("▶️ Starting pre-configured session...")
+        
+        guard isSessionConfigured && !captureSession.isRunning else {
+            print("❌ Session not configured or already running")
+            return
+        }
+        
+        captureSession.startRunning()
+        
+        await MainActor.run {
+            self.isSessionRunning = true
+        }
+        
+        print("✅ Pre-configured session started instantly!")
     }
     
     /// Stop the camera session
     func stopSession() {
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            if self.captureSession.isRunning {
-                self.captureSession.stopRunning()
-                
-                DispatchQueue.main.async {
-                    self.isSessionRunning = false
-                }
-            }
+        Task { [weak self] in
+            await self?.stopSessionAsync()
         }
+    }
+    
+    private func stopSessionAsync() async {
+        guard captureSession.isRunning else {
+            await MainActor.run {
+                self.isSessionRunning = false
+            }
+            return
+        }
+        
+        print("⏹️ Stopping camera session...")
+        captureSession.stopRunning()
+        
+        await MainActor.run {
+            self.isSessionRunning = false
+        }
+        
+        print("✅ Camera session stopped")
     }
     
     /// Clean up capture session inputs and outputs
@@ -180,13 +260,26 @@ class CameraService: NSObject, ObservableObject {
         frontCameraInput = nil
         backCameraInput = nil
         
+        // Clear preview layer references to force recreation
+        frontPreviewLayer = nil
+        backPreviewLayer = nil
+        
+        // Reset configuration state
+        isSessionConfigured = false
+        
         print("✅ Capture session cleaned up")
     }
     
     /// Configure dual camera session with fallback to single camera
-    private func configureSession() {
+    private func configureSession(startRunning: Bool = true) async {
         print("⚙️ Configuring camera session...")
         print("📱 Multi-cam supported: \(isMultiCamSupported)")
+        
+        // Clean up any existing configuration first
+        if !captureSession.inputs.isEmpty || !captureSession.outputs.isEmpty {
+            print("🧹 Cleaning existing session configuration...")
+            cleanupSession()
+        }
         
         captureSession.beginConfiguration()
         
@@ -208,63 +301,95 @@ class CameraService: NSObject, ObservableObject {
             }
             
             captureSession.commitConfiguration()
-            print("▶️ Starting capture session...")
-            captureSession.startRunning()
             
-            DispatchQueue.main.async {
-                print("✅ Camera session started successfully!")
-                self.isSessionRunning = true
+            await MainActor.run {
+                self.isSessionConfigured = true
+                print("✅ Camera session configured successfully!")
+            }
+            
+            if startRunning {
+                print("▶️ Starting capture session...")
+                captureSession.startRunning()
                 
-                // Reset preview layers to ensure they connect properly
-                self.frontPreviewLayer = nil
-                self.backPreviewLayer = nil
+                await MainActor.run {
+                    self.isSessionRunning = true
+                    print("✅ Camera session started successfully!")
+                }
+            } else {
+                print("⏸️ Session configured but not started (for instant loading)")
             }
             
         } catch {
             print("❌ Camera configuration failed: \(error)")
             captureSession.commitConfiguration()
             
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.error = .unknown(error)
             }
         }
+    }
+    
+    /// Pre-cache camera devices for faster session setup
+    private func precacheCameraDevices() async {
+        let (front, back) = await withTaskGroup(of: AVCaptureDevice?.self, returning: (AVCaptureDevice?, AVCaptureDevice?).self) { group in
+            group.addTask {
+                return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+            }
+            group.addTask {
+                return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+            }
+            
+            var frontDevice: AVCaptureDevice?
+            var backDevice: AVCaptureDevice?
+            
+            for await device in group {
+                if device?.position == .front {
+                    frontDevice = device
+                } else if device?.position == .back {
+                    backDevice = device
+                }
+            }
+            
+            return (frontDevice, backDevice)
+        }
+        
+        await MainActor.run {
+            self.frontCameraDevice = front
+            self.backCameraDevice = back
+        }
+        
+        print("🚀 Camera devices pre-cached for faster initialization")
     }
     
     /// Configure dual camera session for devices that support multi-cam
     private func configureDualCameraSession() throws {
         print("🔄 Configuring dual camera inputs...")
         
-        // Configure front camera
-        guard let frontDevice = AVCaptureDevice.default(.builtInWideAngleCamera, 
-                                                       for: .video, 
-                                                       position: .front) else {
+        // Use pre-cached devices or fall back to discovery
+        let frontDevice = frontCameraDevice ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+        let backDevice = backCameraDevice ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        
+        guard let frontDevice = frontDevice else {
             throw CameraError.deviceNotAvailable
         }
         
+        guard let backDevice = backDevice else {
+            throw CameraError.deviceNotAvailable
+        }
+        
+        // Configure both cameras in parallel
         let frontInput = try AVCaptureDeviceInput(device: frontDevice)
-        guard captureSession.canAddInput(frontInput) else {
+        let backInput = try AVCaptureDeviceInput(device: backDevice)
+        
+        guard captureSession.canAddInput(frontInput), captureSession.canAddInput(backInput) else {
             throw CameraError.configurationFailed
         }
         
         captureSession.addInputWithNoConnections(frontInput)
-        frontCameraInput = frontInput
-        print("✅ Front camera input added")
-        
-        // Configure back camera
-        guard let backDevice = AVCaptureDevice.default(.builtInWideAngleCamera, 
-                                                      for: .video, 
-                                                      position: .back) else {
-            throw CameraError.deviceNotAvailable
-        }
-        
-        let backInput = try AVCaptureDeviceInput(device: backDevice)
-        guard captureSession.canAddInput(backInput) else {
-            throw CameraError.configurationFailed
-        }
-        
         captureSession.addInputWithNoConnections(backInput)
+        frontCameraInput = frontInput
         backCameraInput = backInput
-        print("✅ Back camera input added")
+        print("✅ Both camera inputs added")
         
         // Add outputs and create connections
         try addOutputsAndConnections()
@@ -277,17 +402,75 @@ class CameraService: NSObject, ObservableObject {
     
     /// Create manual preview connections for dual camera
     private func createPreviewConnections() throws {
-        // We need to create preview layers after inputs are configured
-        // This will be handled when getFrontPreviewLayer() and getBackPreviewLayer() are called
-        print("📺 Preview connections will be created when layers are requested")
+        // For multi-cam, use sessionWithNoConnections and manually create connections
+        if isMultiCamSupported {
+            // Create preview layers without automatic connections
+            frontPreviewLayer = AVCaptureVideoPreviewLayer()
+            frontPreviewLayer?.setSessionWithNoConnection(captureSession)
+            frontPreviewLayer?.videoGravity = .resizeAspectFill
+            
+            backPreviewLayer = AVCaptureVideoPreviewLayer()
+            backPreviewLayer?.setSessionWithNoConnection(captureSession)
+            backPreviewLayer?.videoGravity = .resizeAspectFill
+            
+            // Manually create preview connections
+            try createManualPreviewConnections()
+        } else {
+            // For single cam, use regular session
+            frontPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+            frontPreviewLayer?.videoGravity = .resizeAspectFill
+            
+            backPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+            backPreviewLayer?.videoGravity = .resizeAspectFill
+        }
+        
+        print("📺 Preview layers created for \(isMultiCamSupported ? "multi-cam" : "single-cam")")
+    }
+    
+    /// Create manual preview layer connections for multi-cam
+    private func createManualPreviewConnections() throws {
+        guard let frontInput = frontCameraInput,
+              let backInput = backCameraInput,
+              let frontLayer = frontPreviewLayer,
+              let backLayer = backPreviewLayer else {
+            throw CameraError.configurationFailed
+        }
+        
+        // Front camera preview connection
+        if let frontVideoPort = frontInput.ports(for: .video, 
+                                                sourceDeviceType: frontInput.device.deviceType, 
+                                                sourceDevicePosition: frontInput.device.position).first {
+            let frontPreviewConnection = AVCaptureConnection(inputPort: frontVideoPort, videoPreviewLayer: frontLayer)
+            if captureSession.canAddConnection(frontPreviewConnection) {
+                captureSession.addConnection(frontPreviewConnection)
+                print("✅ Front camera preview connection added")
+            }
+        }
+        
+        // Back camera preview connection
+        if let backVideoPort = backInput.ports(for: .video,
+                                              sourceDeviceType: backInput.device.deviceType,
+                                              sourceDevicePosition: backInput.device.position).first {
+            let backPreviewConnection = AVCaptureConnection(inputPort: backVideoPort, videoPreviewLayer: backLayer)
+            if captureSession.canAddConnection(backPreviewConnection) {
+                captureSession.addConnection(backPreviewConnection)
+                
+                // Fix orientation for back camera
+                if backPreviewConnection.isVideoOrientationSupported {
+                    backPreviewConnection.videoOrientation = .portrait
+                }
+                
+                print("✅ Back camera preview connection added")
+            }
+        }
     }
     
     /// Fallback single camera configuration for older devices
     private func configureSingleCameraSession() throws {
-        // Start with back camera as primary
-        guard let backDevice = AVCaptureDevice.default(.builtInWideAngleCamera, 
-                                                      for: .video, 
-                                                      position: .back) else {
+        // Use pre-cached device or fall back to discovery
+        let backDevice = backCameraDevice ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        
+        guard let backDevice = backDevice else {
             throw CameraError.deviceNotAvailable
         }
         
@@ -382,20 +565,12 @@ class CameraService: NSObject, ObservableObject {
             return existingLayer
         }
         
+        // Fallback creation if not pre-created
         let layer = AVCaptureVideoPreviewLayer(session: captureSession)
         layer.videoGravity = .resizeAspectFill
         
-        // For multi-cam, we need to manually connect to the front camera
-        if isMultiCamSupported && frontCameraInput != nil {
-            print("📱 Creating front camera preview layer for multi-cam")
-            
-            // The preview layer will automatically connect to available inputs
-            // We'll configure mirroring when the layer is added to a view
-        } else {
-            print("📱 Creating front camera preview layer for single-cam")
-        }
-        
         frontPreviewLayer = layer
+        print("📱 Front camera preview layer created (fallback)")
         return layer
     }
     
@@ -405,6 +580,7 @@ class CameraService: NSObject, ObservableObject {
             return existingLayer
         }
         
+        // Fallback creation if not pre-created
         let layer = AVCaptureVideoPreviewLayer(session: captureSession)
         layer.videoGravity = .resizeAspectFill
         
@@ -413,13 +589,8 @@ class CameraService: NSObject, ObservableObject {
             connection.videoOrientation = .portrait
         }
         
-        if isMultiCamSupported && backCameraInput != nil {
-            print("📱 Creating back camera preview layer for multi-cam")
-        } else {
-            print("📱 Creating back camera preview layer for single-cam")
-        }
-        
         backPreviewLayer = layer
+        print("📱 Back camera preview layer created (fallback)")
         return layer
     }
     

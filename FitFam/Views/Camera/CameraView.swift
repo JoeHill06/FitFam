@@ -4,7 +4,7 @@ import AVFoundation
 /// Main camera view combining dual preview and controls
 /// Provides BeReal-style experience with front/back camera simultaneously
 struct CameraView: View {
-    @StateObject private var cameraService = CameraService()
+    @EnvironmentObject var cameraService: CameraService // Use global camera service
     @State private var capturedImages: (front: UIImage?, back: UIImage?)? = nil
     @State private var showPostComposer = false
     

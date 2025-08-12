@@ -28,27 +28,16 @@ struct CameraPreviewView: UIViewRepresentable {
         
         // Apply mirroring and orientation
         if let connection = previewLayer.connection {
-            // Handle mirroring - flip both cameras horizontally
+            // Handle mirroring properly
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                if isMirrored {
-                    // Front camera - flip horizontally (opposite of before)
-                    connection.isVideoMirrored = false
-                } else {
-                    // Back camera - flip horizontally too
-                    connection.isVideoMirrored = true
-                }
+                // Front camera should be mirrored, back camera should not
+                connection.isVideoMirrored = isMirrored
             }
             
-            // Fix orientation - flip both cameras vertically
+            // Set proper orientation
             if connection.isVideoOrientationSupported {
-                if isMirrored {
-                    // Front camera - flip vertically (opposite of before)
-                    connection.videoOrientation = .portrait
-                } else {
-                    // Back camera - flip vertically too
-                    connection.videoOrientation = .portrait
-                }
+                connection.videoOrientation = .portrait
             }
         }
         
@@ -252,16 +241,32 @@ struct DualCameraPreviewView: View {
                 } else if !cameraService.isAuthorized {
                     // Permission denied state
                     CameraPermissionView()
+                } else if cameraService.isSessionConfigured {
+                    // Session configured but not running - show instant preview
+                    Color.black
+                        .overlay(
+                            VStack {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.5)
+                                Text("Starting Camera...")
+                                    .foregroundColor(.white)
+                                    .font(.body)
+                                    .padding(.top, 8)
+                            }
+                        )
                 } else {
-                    // Loading state
+                    // Initial loading state
                     CameraLoadingView()
                 }
             }
         }
         .onAppear {
+            print("📱 Camera view appeared - starting session")
             cameraService.startSession()
         }
         .onDisappear {
+            print("📱 Camera view disappeared - stopping session")
             cameraService.stopSession()
         }
         .alert("Camera Error", isPresented: .constant(cameraService.error != nil)) {
