@@ -13,11 +13,13 @@ class CameraService: NSObject, ObservableObject {
     @Published var isAuthorized = false
     @Published var isSessionRunning = false
     @Published var isSessionConfigured = false // Track if session is configured but not necessarily running
+    @Published var previewLayersUpdated = false // Track when preview layers are recreated
     @Published var captureMode: CaptureMode = .photo
     @Published var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var isCapturing = false
     @Published var error: CameraError?
     @Published var isBackCameraPrimary = true // Track which camera is the main view for dual camera
+    @Published var isCameraViewActive = false // Track if camera view is currently active
     
     // MARK: - Private Properties
     private let captureSession = AVCaptureMultiCamSession()
@@ -174,9 +176,16 @@ class CameraService: NSObject, ObservableObject {
             return
         }
         
-        // Don't start if already running
-        guard !isSessionRunning else {
-            print("ℹ️ Camera session already running, skipping start")
+        // Don't start if already running, but refresh preview layers
+        if isSessionRunning {
+            print("ℹ️ Camera session already running, refreshing preview layers")
+            // Force preview layer refresh for when returning to camera view
+            Task {
+                await reconnectPreviewLayers()
+                await MainActor.run {
+                    self.previewLayersUpdated.toggle()
+                }
+            }
             return
         }
         
@@ -203,6 +212,12 @@ class CameraService: NSObject, ObservableObject {
             } else {
                 // Configure and start
                 await self?.configureSession(startRunning: true)
+            }
+            
+            // Always ensure preview layers are reconnected after any session start
+            await self?.reconnectPreviewLayers()
+            await MainActor.run {
+                self?.previewLayersUpdated.toggle()
             }
         }
     }
@@ -237,6 +252,11 @@ class CameraService: NSObject, ObservableObject {
         }
         
         if captureSession.isRunning {
+            // Ensure preview layers are connected after session restart
+            await reconnectPreviewLayers()
+            await MainActor.run {
+                self.previewLayersUpdated.toggle()
+            }
             print("✅ Pre-configured session started instantly!")
         } else {
             print("❌ Failed to start pre-configured session")
@@ -285,6 +305,27 @@ class CameraService: NSObject, ObservableObject {
         }
         
         print("✅ Camera session stopped")
+    }
+    
+    /// Reconnect preview layers to the session if they became disconnected
+    private func reconnectPreviewLayers() async {
+        guard let frontLayer = frontPreviewLayer, let backLayer = backPreviewLayer else { 
+            print("⚠️ Preview layers not available for reconnection")
+            return 
+        }
+        
+        print("🔗 Simple preview layer reconnection...")
+        
+        // Simple reconnection - just ensure layers are connected to session
+        if isMultiCamSupported {
+            frontLayer.setSessionWithNoConnection(captureSession)
+            backLayer.setSessionWithNoConnection(captureSession)
+        } else {
+            frontLayer.session = captureSession
+            backLayer.session = captureSession
+        }
+        
+        print("✅ Simple preview layer reconnection complete")
     }
     
     /// Clean up capture session inputs and outputs
@@ -360,6 +401,9 @@ class CameraService: NSObject, ObservableObject {
             if startRunning {
                 print("▶️ Starting capture session...")
                 captureSession.startRunning()
+                
+                // Ensure preview layers are properly connected after configuration
+                await reconnectPreviewLayers()
                 
                 await MainActor.run {
                     self.isSessionRunning = true

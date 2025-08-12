@@ -272,11 +272,35 @@ struct DualCameraPreviewView: View {
         }
         .onAppear {
             print("📱 Camera view appeared - starting session")
+            cameraService.isCameraViewActive = true
             cameraService.startSession()
+            
+            // Fallback: If camera is still black after 1 second, force complete reload
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                if cameraService.isCameraViewActive && cameraService.isSessionRunning {
+                    print("🔄 Fallback check: forcing complete session reload to ensure camera works")
+                    cameraService.stopSession()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        if cameraService.isCameraViewActive {
+                            cameraService.startSession()
+                        }
+                    }
+                }
+            }
         }
         .onDisappear {
-            print("📱 Camera view disappeared - stopping session")
-            cameraService.stopSession()
+            print("📱 Camera view disappeared - delaying session stop")
+            cameraService.isCameraViewActive = false
+            // Much longer delay to keep session running for extended periods
+            DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) {
+                // Only stop if we're still not on the camera screen
+                if !cameraService.isCameraViewActive {
+                    print("📱 Camera view still inactive after 30s - stopping session")
+                    cameraService.stopSession()
+                } else {
+                    print("📱 Camera view is back - keeping session running")
+                }
+            }
         }
         .alert("Camera Error", isPresented: .constant(cameraService.error != nil)) {
             Button("OK") {
