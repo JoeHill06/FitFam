@@ -67,7 +67,7 @@ class FeedViewModel: ObservableObject {
                 
                 self.posts = documents.compactMap { document in
                     try? document.data(as: Post.self)
-                }
+                }.filter { $0.id != nil }
                 
                 self.lastDocument = documents.last
                 self.isLoading = false
@@ -104,7 +104,7 @@ class FeedViewModel: ObservableObject {
                     
                     let newPosts = documents.compactMap { document in
                         try? document.data(as: Post.self)
-                    }
+                    }.filter { $0.id != nil }
                     
                     self.posts.append(contentsOf: newPosts)
                     self.lastDocument = documents.last
@@ -172,6 +172,15 @@ class FeedViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+    
+    func cleanup() {
+        listener?.remove()
+        listener = nil
+        lastDocument = nil
+        posts = []
+        isLoading = false
+        errorMessage = nil
     }
     
     deinit {

@@ -4,6 +4,7 @@ struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSettings = false
     @State private var showSignOutConfirmation = false
+    @State private var isSigningOut = false
     
     var body: some View {
         NavigationView {
@@ -18,11 +19,11 @@ struct ProfileView: View {
                                 .aspectRatio(contentMode: .fill)
                         } placeholder: {
                             Circle()
-                                .fill(Color.blue.opacity(0.2))
+                                .fill(DesignTokens.BrandColors.primary.opacity(0.2))
                                 .overlay(
                                     Text(String(authViewModel.currentUser?.displayName.first?.uppercased() ?? "U"))
                                         .font(.system(size: 32, weight: .bold))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(DesignTokens.BrandColors.primary)
                                 )
                         }
                         .frame(width: 100, height: 100)
@@ -31,12 +32,12 @@ struct ProfileView: View {
                         
                         VStack(spacing: 4) {
                             Text(authViewModel.currentUser?.displayName ?? "User")
-                                .font(.title2)
-                                .fontWeight(.bold)
+                                .font(DesignTokens.Typography.Styles.title2)
+                                .foregroundColor(DesignTokens.TextColors.primary)
                             
                             Text("@\(authViewModel.currentUser?.username ?? "username")")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .font(DesignTokens.Typography.Styles.subheadline)
+                                .foregroundColor(DesignTokens.TextColors.secondary)
                         }
                         
                         // Bio stats
@@ -51,13 +52,12 @@ struct ProfileView: View {
                             // TODO: Navigate to edit profile
                         }) {
                             Text("Edit Profile")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.blue)
+                                .font(DesignTokens.Typography.Styles.bodyMedium)
+                                .foregroundColor(DesignTokens.BrandColors.primary)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 36)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(18)
+                                .frame(height: DesignTokens.Accessibility.recommendedTapTarget)
+                                .background(DesignTokens.BrandColors.primary.opacity(0.15))
+                                .cornerRadius(DesignTokens.BorderRadius.lg)
                         }
                     }
                     .padding()
@@ -118,7 +118,7 @@ struct ProfileView: View {
                     )
                     
                     // Settings Section
-                    VStack(spacing: 12) {
+                    VStack(spacing: DesignTokens.Spacing.sm) {
                         SettingsRow(icon: "gearshape.fill", title: "Settings", action: { showSettings = true })
                         SettingsRow(icon: "questionmark.circle.fill", title: "Help & Support", action: {})
                         SettingsRow(icon: "info.circle.fill", title: "About", action: {})
@@ -162,13 +162,34 @@ struct ProfileView: View {
                 .environmentObject(authViewModel)
         }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) { 
+                isSigningOut = false 
+            }
             Button("Sign Out", role: .destructive) {
-                authViewModel.signOut()
+                isSigningOut = true
+                Task {
+                    await authViewModel.signOut()
+                    isSigningOut = false
+                }
             }
         } message: {
             Text("Are you sure you want to sign out? You'll need to sign back in to access your account.")
         }
+        .disabled(isSigningOut)
+        .overlay(
+            Group {
+                if isSigningOut {
+                    Color.black.opacity(0.3)
+                        .overlay(
+                            ProgressView("Signing out...")
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .padding()
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(10)
+                        )
+                }
+            }
+        )
     }
 }
 
@@ -179,12 +200,11 @@ struct StatColumn: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(number)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .font(DesignTokens.Typography.Styles.title3)
+                .foregroundColor(DesignTokens.TextColors.primary)
             Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DesignTokens.Typography.Styles.caption1)
+                .foregroundColor(DesignTokens.TextColors.secondary)
         }
     }
 }
@@ -252,19 +272,19 @@ struct SettingsRow: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundColor(.blue)
+                    .foregroundColor(DesignTokens.BrandColors.primary)
                     .frame(width: 24)
                 
                 Text(title)
-                    .foregroundColor(.primary)
+                    .foregroundColor(DesignTokens.TextColors.primary)
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(DesignTokens.Typography.Styles.caption1)
+                    .foregroundColor(DesignTokens.TextColors.secondary)
             }
-            .padding()
+            .padding(DesignTokens.Spacing.md)
         }
         .buttonStyle(PlainButtonStyle())
     }

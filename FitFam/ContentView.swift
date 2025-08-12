@@ -101,6 +101,36 @@ struct MainTabView: View {
         .accentColor(DesignTokens.BrandColors.primary)
         .tokenBackground(DesignTokens.BackgroundColors.primary)
         .preferredColorScheme(.dark)
+        .onAppear {
+            // Configure tab bar appearance
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor.adaptive(light: "#FFFFFF", dark: "#000000")
+            
+            // Selected tab item
+            appearance.stackedLayoutAppearance.selected.iconColor = UIColor.adaptive(light: "#FF3B30", dark: "#FF453A")
+            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+                .foregroundColor: UIColor.adaptive(light: "#FF3B30", dark: "#FF453A")
+            ]
+            
+            // Unselected tab item
+            appearance.stackedLayoutAppearance.normal.iconColor = UIColor.adaptive(light: "#757575", dark: "#EBEBF5")
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+                .foregroundColor: UIColor.adaptive(light: "#757575", dark: "#EBEBF5")
+            ]
+            
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            HapticManager.tabChanged()
+        }
+        .onChange(of: authViewModel.isAuthenticated) { _, isAuth in
+            if !isAuth {
+                // Reset tab selection when user signs out
+                selectedTab = 0
+            }
+        }
     }
 }
 

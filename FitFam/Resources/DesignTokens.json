@@ -2,69 +2,69 @@
   "colors": {
     "brand": {
       "primary": {
-        "light": "#F34236",
-        "dark": "#FF5A4D"
+        "light": "#FF3B30",
+        "dark": "#FF453A"
       },
       "primaryVariant": {
-        "light": "#D73027",
-        "dark": "#FF6B5B"
+        "light": "#D70015",
+        "dark": "#FF6961"
       },
       "secondary": {
-        "light": "#2196F3",
-        "dark": "#42A5F5"
+        "light": "#FF3B30",
+        "dark": "#FF453A"
       }
     },
     "semantic": {
       "success": {
-        "light": "#4CAF50",
-        "dark": "#66BB6A"
+        "light": "#34C759",
+        "dark": "#30D158"
       },
       "warning": {
-        "light": "#FF9800",
-        "dark": "#FFB74D"
+        "light": "#FF9500",
+        "dark": "#FF9F0A"
       },
       "error": {
-        "light": "#F44336",
-        "dark": "#EF5350"
+        "light": "#FF3B30",
+        "dark": "#FF453A"
       },
       "info": {
-        "light": "#2196F3",
-        "dark": "#42A5F5"
+        "light": "#007AFF",
+        "dark": "#0A84FF"
       }
     },
     "neutral": {
       "background": {
         "primary": {
           "light": "#FFFFFF",
-          "dark": "#0D0D0D"
+          "dark": "#000000"
         },
         "secondary": {
           "light": "#F5F5F5",
-          "dark": "#1A1A1A"
+          "dark": "#111111"
         },
         "tertiary": {
           "light": "#EEEEEE",
-          "dark": "#262626"
+          "dark": "#1C1C1E"
         }
       },
       "surface": {
         "elevated": {
           "light": "#FFFFFF",
-          "dark": "#1F1F1F"
+          "dark": "#1C1C1E"
         },
         "pressed": {
           "light": "#F0F0F0",
-          "dark": "#2D2D2D"
+          "dark": "#2C2C2E"
         }
       },
       "border": {
         "primary": {
           "light": "#E0E0E0",
-          "dark": "#404040"
+          "dark": "#38383A"
         },
         "secondary": {
           "light": "#BDBDBD",
-          "dark": "#525252"
+          "dark": "#48484A"
         }
       },
       "text": {
@@ -74,15 +74,15 @@
         },
         "secondary": {
           "light": "#757575",
-          "dark": "#B3B3B3"
+          "dark": "#EBEBF5"
         },
         "tertiary": {
           "light": "#9E9E9E",
-          "dark": "#808080"
+          "dark": "#EBEBF5"
         },
         "disabled": {
           "light": "#BDBDBD",
-          "dark": "#525252"
+          "dark": "#48484A"
         }
       }
     }

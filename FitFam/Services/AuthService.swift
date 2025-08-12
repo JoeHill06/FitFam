@@ -165,9 +165,11 @@ class AuthService: ObservableObject {
         }
     }
     
+    @MainActor
     func signOut() throws {
         try Auth.auth().signOut()
-        Task { @MainActor in self.user = nil }
+        self.user = nil
+        self.errorMessage = nil
     }
     
     func deleteAccount() async throws {

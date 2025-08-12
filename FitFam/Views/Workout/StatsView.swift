@@ -17,7 +17,7 @@ struct StatsView: View {
                             .font(.system(size: 40))
                         Text("\(currentStreak)")
                             .font(.system(size: 48, weight: .bold))
-                            .foregroundColor(.orange)
+                            .foregroundColor(DesignTokens.BrandColors.primary)
                         Text("Day Streak")
                             .font(.headline)
                             .foregroundColor(.secondary)
@@ -38,7 +38,7 @@ struct StatsView: View {
                             Text("\(currentWeekWorkouts)/\(weeklyGoal)")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                                .foregroundColor(.blue)
+                                .foregroundColor(DesignTokens.BrandColors.primary)
                         }
                         
                         // Progress bar
@@ -51,7 +51,7 @@ struct StatsView: View {
                                 
                                 Rectangle()
                                     .frame(width: geometry.size.width * min(Double(currentWeekWorkouts) / Double(weeklyGoal), 1.0), height: 8)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(DesignTokens.BrandColors.primary)
                                     .cornerRadius(4)
                             }
                         }
@@ -68,12 +68,16 @@ struct StatsView: View {
                                     
                                     Circle()
                                         .frame(width: 24, height: 24)
-                                        .foregroundColor(day < currentWeekWorkouts ? .green : Color(.systemGray5))
+                                        .foregroundColor(day < currentWeekWorkouts ? DesignTokens.SemanticColors.success : DesignTokens.BorderColors.secondary)
                                         .overlay(
-                                            Image(systemName: day < currentWeekWorkouts ? "checkmark" : "")
-                                                .font(.caption2)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.white)
+                                            Group {
+                                                if day < currentWeekWorkouts {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.caption2)
+                                                        .fontWeight(.bold)
+                                                        .foregroundColor(.white)
+                                                }
+                                            }
                                         )
                                 }
                             }
@@ -86,10 +90,10 @@ struct StatsView: View {
                     
                     // Stats Grid
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
-                        StatCard(title: "Total Workouts", value: "\(totalWorkouts)", icon: "💪", color: .blue)
-                        StatCard(title: "Longest Streak", value: "\(longestStreak) days", icon: "🏆", color: .yellow)
-                        StatCard(title: "This Month", value: "14 workouts", icon: "📅", color: .green)
-                        StatCard(title: "Calories Burned", value: "8,240 cal", icon: "🔥", color: .orange)
+                        StatCard(title: "Total Workouts", value: "\(totalWorkouts)", icon: "💪", color: DesignTokens.BrandColors.primary)
+                        StatCard(title: "Longest Streak", value: "\(longestStreak) days", icon: "🏆", color: DesignTokens.SemanticColors.warning)
+                        StatCard(title: "This Month", value: "14 workouts", icon: "📅", color: DesignTokens.SemanticColors.success)
+                        StatCard(title: "Calories Burned", value: "8,240 cal", icon: "🔥", color: DesignTokens.BrandColors.primaryVariant)
                     }
                     
                     // Achievement Gallery
@@ -179,10 +183,10 @@ struct AchievementRow: View {
             
             if isUnlocked {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundColor(DesignTokens.SemanticColors.success)
             } else {
                 Image(systemName: "lock.circle.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(DesignTokens.TextColors.secondary)
             }
         }
         .padding(8)

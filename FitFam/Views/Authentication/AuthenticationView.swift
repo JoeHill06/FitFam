@@ -44,6 +44,7 @@ struct AuthenticationView: View {
                     if showSignUp {
                         // Google Sign Up - Official Button
                         GoogleSignInButton(scheme: .dark, style: .wide, state: .normal) {
+                            HapticManager.mediumTap()
                             Task {
                                 await authViewModel.signUpWithGoogle()
                             }
@@ -52,6 +53,7 @@ struct AuthenticationView: View {
                     } else {
                         // Google Sign In - Official Button  
                         GoogleSignInButton(scheme: .dark, style: .wide, state: .normal) {
+                            HapticManager.mediumTap()
                             Task {
                                 await authViewModel.signInWithGoogle()
                             }
@@ -147,6 +149,9 @@ struct AuthenticationView: View {
                             .onChange(of: email) { _, newValue in
                                 validateEmail(newValue)
                             }
+                            .onTapGesture {
+                                HapticManager.fieldFocus()
+                            }
                         
                         if let emailError = emailError {
                             Text(emailError)
@@ -174,6 +179,9 @@ struct AuthenticationView: View {
                             .textContentType(showSignUp ? .newPassword : .password)
                             .onChange(of: password) { _, newValue in
                                 validatePassword(newValue)
+                            }
+                            .onTapGesture {
+                                HapticManager.fieldFocus()
                             }
                         
                         if let passwordError = passwordError {

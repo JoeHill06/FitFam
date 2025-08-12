@@ -180,11 +180,19 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    func signOut() {
+    func signOut() async {
         do {
-            try authService.signOut()
+            try await authService.signOut()
+            
+            // Clear all state
             currentUser = nil
             isAuthenticated = false
+            errorMessage = nil
+            showError = false
+            
+            // Clear any cached data that might cause issues
+            // The auth state listener will handle the transition automatically
+            
         } catch {
             showErrorPrivate("Failed to sign out: \(error.localizedDescription)")
         }
@@ -227,6 +235,7 @@ class AuthViewModel: ObservableObject {
             try await firebaseService.updateUser(user)
             currentUser = user
             
+            HapticManager.success()
             print("✅ Onboarding completed for user: \(user.username)")
             print("✅ User isOnboarded: \(user.isOnboarded)")
             print("✅ needsOnboarding: \(needsOnboarding)")
@@ -260,6 +269,7 @@ class AuthViewModel: ObservableObject {
     }
     
     private func showErrorPrivate(_ message: String) {
+        HapticManager.error()
         errorMessage = message
         showError = true
     }

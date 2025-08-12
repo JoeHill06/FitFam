@@ -25,6 +25,7 @@ struct HomeFeedView: View {
                 HStack {
                     // Profile icon button
                     Button(action: {
+                        HapticManager.selection()
                         showDetailedProfile = true
                     }) {
                         AsyncImage(url: URL(string: authViewModel.currentUser?.avatarURL ?? "")) { image in
@@ -34,38 +35,42 @@ struct HomeFeedView: View {
                         } placeholder: {
                             Image(systemName: "person.circle")
                                 .font(.title2)
-                                .foregroundColor(.blue)
+                                .foregroundColor(DesignTokens.BrandColors.primary)
                         }
                         .frame(width: 32, height: 32)
                         .clipShape(Circle())
                     }
+                    .frame(minWidth: DesignTokens.Accessibility.recommendedTapTarget, minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                    .contentShape(Rectangle())
                     
                     Spacer()
                     
                     // App title
                     Text("Fit Fam")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .font(DesignTokens.Typography.Styles.title2)
+                        .foregroundColor(DesignTokens.TextColors.primary)
                     
                     Spacer()
                     
                     // Add contacts button
                     Button(action: {
+                        HapticManager.selection()
                         showContactsView = true
                     }) {
                         Image(systemName: "person.badge.plus")
                             .font(.title2)
-                            .foregroundColor(.blue)
+                            .foregroundColor(DesignTokens.BrandColors.primary)
                     }
+                    .frame(minWidth: DesignTokens.Accessibility.recommendedTapTarget, minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(.systemBackground))
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.vertical, DesignTokens.Spacing.sm)
+                .background(DesignTokens.BackgroundColors.primary)
                 .overlay(
                     Rectangle()
                         .frame(height: 0.5)
-                        .foregroundColor(Color(.separator)),
+                        .foregroundColor(DesignTokens.BorderColors.primary),
                     alignment: .bottom
                 )
                 
@@ -87,22 +92,23 @@ struct HomeFeedView: View {
                         if feedViewModel.isLoading {
                             HStack {
                                 ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: DesignTokens.BrandColors.primary))
                                     .scaleEffect(0.8)
                                 Text("Loading more posts...")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .font(DesignTokens.Typography.Styles.caption1)
+                                    .foregroundColor(DesignTokens.TextColors.secondary)
                             }
-                            .padding()
+                            .padding(DesignTokens.Spacing.md)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.horizontal, DesignTokens.Spacing.md)
+                    .padding(.top, DesignTokens.Spacing.xs)
                 }
                 .refreshable {
                     await feedViewModel.refreshFeed()
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .tokenBackground(DesignTokens.BackgroundColors.secondary)
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showDetailedProfile) {

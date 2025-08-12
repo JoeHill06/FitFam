@@ -178,42 +178,51 @@ extension Post {
         return formatter.localizedString(for: timestamp, relativeTo: Date())
     }
     
-    static let mockPosts: [Post] = [
-        Post(
-            userID: "user1",
-            username: "sarah_runs",
-            userAvatarURL: nil,
-            postType: .workout,
-            content: "Morning run to start the day right! 🌅",
-            workoutData: WorkoutData(
-                activityType: .running,
-                duration: 1800,
-                distance: 5.2,
-                calories: 350,
-                intensity: 7
+    static let mockPosts: [Post] = {
+        var posts = [
+            Post(
+                userID: "user1",
+                username: "sarah_runs",
+                userAvatarURL: nil,
+                postType: .workout,
+                content: "Morning run to start the day right! 🌅",
+                workoutData: WorkoutData(
+                    activityType: .running,
+                    duration: 1800,
+                    distance: 5.2,
+                    calories: 350,
+                    intensity: 7
+                ),
+                location: Location(latitude: 37.7749, longitude: -122.4194, name: "Golden Gate Park", address: "San Francisco, CA")
             ),
-            location: Location(latitude: 37.7749, longitude: -122.4194, name: "Golden Gate Park", address: "San Francisco, CA")
-        ),
-        Post(
-            userID: "user2",
-            username: "gym_warrior",
-            userAvatarURL: nil,
-            postType: .achievement,
-            content: "New PR! 💪 Finally hit my goal of benching my body weight!"
-        ),
-        Post(
-            userID: "user3",
-            username: "yoga_zen",
-            userAvatarURL: nil,
-            postType: .workout,
-            content: "Peaceful evening yoga session 🧘‍♀️",
-            workoutData: WorkoutData(
-                activityType: .yoga,
-                duration: 3600,
-                distance: nil,
-                calories: 200,
-                intensity: 4
+            Post(
+                userID: "user2",
+                username: "gym_warrior",
+                userAvatarURL: nil,
+                postType: .achievement,
+                content: "New PR! 💪 Finally hit my goal of benching my body weight!"
+            ),
+            Post(
+                userID: "user3",
+                username: "yoga_zen",
+                userAvatarURL: nil,
+                postType: .workout,
+                content: "Peaceful evening yoga session 🧘‍♀️",
+                workoutData: WorkoutData(
+                    activityType: .yoga,
+                    duration: 3600,
+                    distance: nil,
+                    calories: 200,
+                    intensity: 4
+                )
             )
-        )
-    ]
+        ]
+        
+        // Assign unique IDs to mock posts
+        posts[0].id = "mock_post_1"
+        posts[1].id = "mock_post_2"
+        posts[2].id = "mock_post_3"
+        
+        return posts
+    }()
 }

@@ -341,33 +341,7 @@ struct TypographyScaleView: View {
 }
 
 // MARK: - Press Events Helper (for button interactions)
-
-extension View {
-    func pressEvents(onPress: @escaping () -> Void, onRelease: @escaping () -> Void) -> some View {
-        self.modifier(PressEventModifier(onPress: onPress, onRelease: onRelease))
-    }
-}
-
-struct PressEventModifier: ViewModifier {
-    let onPress: () -> Void
-    let onRelease: () -> Void
-    
-    func body(content: Content) -> some View {
-        content
-            .onLongPressGesture(
-                minimumDuration: 0,
-                maximumDistance: .infinity,
-                pressing: { pressing in
-                    if pressing {
-                        onPress()
-                    } else {
-                        onRelease()
-                    }
-                },
-                perform: {}
-            )
-    }
-}
+// Note: PressEventModifier is defined in EnhancedButton.swift to avoid redeclaration
 
 /*
  

@@ -31,12 +31,12 @@ struct PostCardView: View {
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     Circle()
-                        .fill(Color.blue.opacity(0.2))
+                        .fill(DesignTokens.BrandColors.primary.opacity(0.2))
                         .overlay(
                             Text(String(post.username.first?.uppercased() ?? "U"))
                                 .font(.headline)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.blue)
+                                .foregroundColor(DesignTokens.BrandColors.primary)
                         )
                 }
                 .frame(width: 40, height: 40)
@@ -61,8 +61,8 @@ struct PostCardView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Color.blue.opacity(0.15))
-                            .foregroundColor(.blue)
+                            .background(DesignTokens.BrandColors.primary.opacity(0.15))
+                            .foregroundColor(DesignTokens.BrandColors.primary)
                             .cornerRadius(12)
                         } else {
                             HStack(spacing: 4) {
@@ -133,6 +133,7 @@ struct PostCardView: View {
             HStack(spacing: 24) {
                 // Cheer button
                 Button(action: {
+                    HapticManager.cheerGiven()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         isCheerAnimating = true
                     }
@@ -151,11 +152,14 @@ struct PostCardView: View {
                             .font(.caption)
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(post.isCheerByCurrentUser ? .orange : .secondary)
+                    .foregroundColor(post.isCheerByCurrentUser ? DesignTokens.BrandColors.primary : DesignTokens.TextColors.secondary)
                 }
+                .frame(minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                .contentShape(Rectangle())
                 
                 // Comment button
                 Button(action: {
+                    HapticManager.lightTap()
                     showComments = true
                 }) {
                     HStack(spacing: 4) {
@@ -165,17 +169,22 @@ struct PostCardView: View {
                             .font(.caption)
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(DesignTokens.TextColors.secondary)
                 }
+                .frame(minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                .contentShape(Rectangle())
                 
                 // Share button
                 Button(action: {
+                    HapticManager.lightTap()
                     // TODO: Implement share functionality
                 }) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignTokens.TextColors.secondary)
                 }
+                .frame(minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                .contentShape(Rectangle())
                 
                 Spacer()
             }
