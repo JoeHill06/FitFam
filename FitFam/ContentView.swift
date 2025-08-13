@@ -48,14 +48,31 @@ struct ContentView: View {
         .onChange(of: authViewModel.isAuthenticated) { _, isAuthenticated in
             // Show exercise prompt once per cold app launch when user becomes authenticated
             // and doesn't need onboarding
-            if isAuthenticated && !authViewModel.needsOnboarding && !hasShownExercisePrompt {
-                showExercisePrompt = true
-                hasShownExercisePrompt = true
-            }
+            checkAndShowExercisePrompt()
+        }
+        .onAppear {
+            // Check on app appear in case user is already authenticated
+            checkAndShowExercisePrompt()
         }
         .fullScreenCover(isPresented: $showExercisePrompt) {
             ExercisePromptModalView { response in
                 handleExercisePromptResponse(response)
+            }
+        }
+    }
+    
+    // MARK: - Exercise Prompt Logic
+    
+    private func checkAndShowExercisePrompt() {
+        print("🏋️ Checking exercise prompt - isAuthenticated: \(authViewModel.isAuthenticated), needsOnboarding: \(authViewModel.needsOnboarding), hasShown: \(hasShownExercisePrompt)")
+        
+        if authViewModel.isAuthenticated && !authViewModel.needsOnboarding && !hasShownExercisePrompt {
+            print("🏋️ Showing exercise prompt in 0.5 seconds...")
+            // Add a small delay to ensure the UI is fully rendered
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                showExercisePrompt = true
+                hasShownExercisePrompt = true
+                print("🏋️ Exercise prompt should now be visible")
             }
         }
     }
