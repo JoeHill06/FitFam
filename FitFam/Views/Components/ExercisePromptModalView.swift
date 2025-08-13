@@ -13,42 +13,70 @@ struct ExercisePromptModalView: View {
     // MARK: - Properties
     let onSelection: (ExercisePromptResponse) -> Void
     
+    @State private var isVisible = false
+    
     // MARK: - Body
     var body: some View {
         ZStack {
-            // Dark background overlay
-            DesignTokens.BackgroundColors.primary
+            // Background overlay with blur effect
+            DesignTokens.BackgroundColors.primary.opacity(0.95)
                 .ignoresSafeArea()
+                .onTapGesture {
+                    // Allow dismissal by tapping background (fallback to "No")
+                    dismissWithSelection(.no)
+                }
             
-            VStack(spacing: DesignTokens.Spacing.xl2) {
-                // Welcome section
-                welcomeSection
-                
-                // Question section
-                questionSection
-                
-                // Action buttons
-                actionButtons
-                
-                Spacer()
-            }
-            .padding(.horizontal, DesignTokens.Spacing.lg)
-            .padding(.top, DesignTokens.Spacing.xl4)
+            // Main modal content
+            modalContent
+                .scaleEffect(isVisible ? 1.0 : 0.8)
+                .opacity(isVisible ? 1.0 : 0.0)
+                .onAppear {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                        isVisible = true
+                    }
+                }
         }
         .preferredColorScheme(.dark)
     }
     
-    // MARK: - Welcome Section
+    // MARK: - Modal Content
     
-    private var welcomeSection: some View {
+    private var modalContent: some View {
+        VStack(spacing: DesignTokens.Spacing.xl) {
+            // Header section
+            headerSection
+            
+            // Question section  
+            questionSection
+            
+            // Action buttons
+            actionButtons
+        }
+        .padding(DesignTokens.Spacing.xl)
+        .tokenSurface(
+            backgroundColor: DesignTokens.BackgroundColors.secondary,
+            cornerRadius: DesignTokens.BorderRadius.xl2,
+            shadow: DesignTokens.Shadows.xl
+        )
+        .padding(.horizontal, DesignTokens.Spacing.lg)
+    }
+    
+    // MARK: - Header Section
+    
+    private var headerSection: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
+            // Animated emoji with subtle bounce
             Text("🏋️")
-                .font(DesignTokens.Typography.Styles.largeTitle)
+                .font(.system(size: 64))
+                .scaleEffect(isVisible ? 1.0 : 0.5)
+                .animation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.1), value: isVisible)
             
             Text("Welcome to Fit Fam!")
                 .font(DesignTokens.Typography.Styles.title1)
                 .foregroundColor(DesignTokens.TextColors.primary)
                 .multilineTextAlignment(.center)
+                .opacity(isVisible ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.6).delay(0.2), value: isVisible)
         }
     }
     
@@ -56,94 +84,70 @@ struct ExercisePromptModalView: View {
     
     private var questionSection: some View {
         Text("Are you working out?")
-            .font(DesignTokens.Typography.Styles.title2)
-            .foregroundColor(DesignTokens.TextColors.primary)
+            .font(DesignTokens.Typography.Styles.title3)
+            .foregroundColor(DesignTokens.TextColors.secondary)
             .multilineTextAlignment(.center)
-            .padding(.top, DesignTokens.Spacing.xl)
+            .opacity(isVisible ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.6).delay(0.3), value: isVisible)
     }
     
     // MARK: - Action Buttons
     
     private var actionButtons: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
-            // YES Button
-            ExercisePromptButton(
-                title: "Yes",
-                backgroundColor: DesignTokens.BrandColors.primary,
-                textColor: DesignTokens.TextColors.primary
-            ) {
-                HapticManager.selection()
-                onSelection(.yes)
+            // Primary action - YES
+            PrimaryButton("Yes") {
+                dismissWithSelection(.yes)
             }
+            .opacity(isVisible ? 1.0 : 0.0)
+            .offset(y: isVisible ? 0 : 20)
+            .animation(.easeOut(duration: 0.5).delay(0.4), value: isVisible)
+            .accessibilityLabel("Yes, I am working out")
+            .accessibilityHint("Navigates to camera for workout check-in")
             
-            // NO Button  
-            ExercisePromptButton(
-                title: "No",
-                backgroundColor: DesignTokens.BrandColors.primary,
-                textColor: DesignTokens.TextColors.primary
-            ) {
-                HapticManager.selection()
-                onSelection(.no)
-            }
-            
-            // REST DAY Button
-            ExercisePromptButton(
-                title: "Rest Day",
-                backgroundColor: DesignTokens.BrandColors.primary,
-                textColor: DesignTokens.TextColors.primary
-            ) {
-                HapticManager.selection()
-                onSelection(.restDay)
-            }
-        }
-        .padding(.horizontal, DesignTokens.Spacing.md)
-    }
-}
-
-// MARK: - Exercise Prompt Button
-
-/// Custom button component for exercise prompt actions
-private struct ExercisePromptButton: View {
-    let title: String
-    let backgroundColor: Color
-    let textColor: Color
-    let action: () -> Void
-    
-    @State private var isPressed = false
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Spacer()
-                Text(title)
-                    .font(DesignTokens.Typography.Styles.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(textColor)
-                Spacer()
-            }
-            .frame(height: DesignTokens.Accessibility.largeTapTarget)
-            .background(backgroundColor)
-            .cornerRadius(DesignTokens.BorderRadius.lg)
-            .scaleEffect(isPressed ? 0.98 : 1.0)
-            .shadow(
-                color: DesignTokens.Shadows.md.color,
-                radius: DesignTokens.Shadows.md.radius,
-                x: DesignTokens.Shadows.md.x,
-                y: DesignTokens.Shadows.md.y
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onTapGesture {
-            withAnimation(DesignTokens.Animation.fast) {
-                isPressed = true
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(DesignTokens.Animation.fast) {
-                    isPressed = false
+            // Secondary actions
+            HStack(spacing: DesignTokens.Spacing.md) {
+                // NO Button
+                SecondaryButton("No") {
+                    dismissWithSelection(.no)
                 }
-                action()
+                .accessibilityLabel("No, I am not working out")
+                .accessibilityHint("Returns to home feed")
+                
+                // REST DAY Button  
+                SecondaryButton("Rest Day") {
+                    dismissWithSelection(.restDay)
+                }
+                .accessibilityLabel("Today is a rest day")
+                .accessibilityHint("Opens camera for rest day documentation")
             }
+            .opacity(isVisible ? 1.0 : 0.0)
+            .offset(y: isVisible ? 0 : 30)
+            .animation(.easeOut(duration: 0.5).delay(0.5), value: isVisible)
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func dismissWithSelection(_ response: ExercisePromptResponse) {
+        // Haptic feedback based on selection
+        switch response {
+        case .yes:
+            HapticManager.success()
+        case .restDay:
+            HapticManager.mediumTap()
+        case .no:
+            HapticManager.lightTap()
+        }
+        
+        // Animate out then call completion
+        withAnimation(.easeIn(duration: 0.25)) {
+            isVisible = false
+        }
+        
+        // Slight delay before calling onSelection for smooth animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            onSelection(response)
         }
     }
 }
