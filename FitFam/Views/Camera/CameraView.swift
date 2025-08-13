@@ -65,6 +65,12 @@ struct PostComposerView: View {
     @State private var showLocationPicker = false
     @State private var isVisible = false
     
+    // MARK: - Image Management State
+    @State private var isPrimaryImageFront = false // false = back camera primary, true = front camera primary
+    @State private var pipPosition: PIPPosition = .topLeading
+    @State private var isDragging = false
+    @State private var isPressed = false
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -128,10 +134,11 @@ struct PostComposerView: View {
     
     private var imagePreviewSection: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
-            if let backImage = backImage {
-                // Main back camera image with enhanced styling
-                ZStack(alignment: .topLeading) {
-                    Image(uiImage: backImage)
+            if let backImage = backImage, let frontImage = frontImage {
+                // Interactive dual camera layout
+                ZStack(alignment: pipPosition.alignment) {
+                    // Primary image (changes based on isPrimaryImageFront)
+                    Image(uiImage: isPrimaryImageFront ? frontImage : backImage)
                         .resizable()
                         .scaledToFill()
                         .frame(height: 400)
@@ -144,35 +151,42 @@ struct PostComposerView: View {
                             x: DesignTokens.Shadows.md.x,
                             y: DesignTokens.Shadows.md.y
                         )
+                        .scaleEffect(isVisible ? 1.0 : 0.95)
+                        .opacity(isVisible ? 1.0 : 0.0)
+                        .animation(.easeOut(duration: 0.4), value: isVisible)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isPrimaryImageFront)
                     
-                    // Front camera image overlay (BeReal style)
-                    if let frontImage = frontImage {
-                        Image(uiImage: frontImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 100, height: 130)
-                            .clipped()
-                            .cornerRadius(DesignTokens.BorderRadius.md)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
-                                    .stroke(DesignTokens.BackgroundColors.primary, lineWidth: 3)
-                            )
-                            .shadow(
-                                color: DesignTokens.Shadows.sm.color,
-                                radius: DesignTokens.Shadows.sm.radius,
-                                x: DesignTokens.Shadows.sm.x,
-                                y: DesignTokens.Shadows.sm.y
-                            )
-                            .padding(.top, DesignTokens.Spacing.lg)
-                            .padding(.leading, DesignTokens.Spacing.lg)
-                            .scaleEffect(isVisible ? 1.0 : 0.8)
-                            .opacity(isVisible ? 1.0 : 0.0)
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isVisible)
-                    }
+                    // PIP image (interactive overlay)
+                    InteractivePIPView(
+                        image: isPrimaryImageFront ? backImage : frontImage,
+                        position: $pipPosition,
+                        isDragging: $isDragging,
+                        isPressed: $isPressed,
+                        onTap: swapPrimaryImage,
+                        onDoubleTap: swapPrimaryImage,
+                        isVisible: isVisible
+                    )
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isVisible)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pipPosition)
                 }
-                .scaleEffect(isVisible ? 1.0 : 0.95)
-                .opacity(isVisible ? 1.0 : 0.0)
-                .animation(.easeOut(duration: 0.4), value: isVisible)
+            } else if let singleImage = backImage ?? frontImage {
+                // Single image fallback
+                Image(uiImage: singleImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 400)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .cornerRadius(DesignTokens.BorderRadius.lg)
+                    .shadow(
+                        color: DesignTokens.Shadows.md.color,
+                        radius: DesignTokens.Shadows.md.radius,
+                        x: DesignTokens.Shadows.md.x,
+                        y: DesignTokens.Shadows.md.y
+                    )
+                    .scaleEffect(isVisible ? 1.0 : 0.95)
+                    .opacity(isVisible ? 1.0 : 0.0)
+                    .animation(.easeOut(duration: 0.4), value: isVisible)
             } else {
                 // Placeholder if no images
                 Rectangle()
@@ -338,6 +352,216 @@ struct PostComposerView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             onDismiss()
+        }
+    }
+    
+    /// Swaps which image is primary (front vs back camera)
+    private func swapPrimaryImage() {
+        HapticManager.selection()
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isPrimaryImageFront.toggle()
+        }
+    }
+}
+
+// MARK: - Interactive PIP View
+
+/// Interactive Picture-in-Picture view with tap, double-tap, and drag functionality
+struct InteractivePIPView: View {
+    let image: UIImage
+    @Binding var position: PIPPosition
+    @Binding var isDragging: Bool
+    @Binding var isPressed: Bool
+    let onTap: () -> Void
+    let onDoubleTap: () -> Void
+    let isVisible: Bool
+    
+    @State private var dragOffset = CGSize.zero
+    @State private var lastDragPosition: CGPoint = .zero
+    
+    var body: some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(width: pipSize.width, height: pipSize.height)
+            .clipped()
+            .cornerRadius(DesignTokens.BorderRadius.md)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
+                    .stroke(pipBorderColor, lineWidth: pipBorderWidth)
+            )
+            .shadow(
+                color: pipShadowColor,
+                radius: pipShadowRadius,
+                x: 0,
+                y: pipShadowY
+            )
+            .scaleEffect(pipScale)
+            .opacity(pipOpacity)
+            .offset(dragOffset)
+            .padding(DesignTokens.Spacing.lg)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint("Tap to make this photo primary, or drag to reposition")
+            .accessibilityAddTraits(.isButton)
+            .onTapGesture {
+                handleTap()
+            }
+            .onTapGesture(count: 2) {
+                handleDoubleTap()
+            }
+            .onLongPressGesture(minimumDuration: 0.1, maximumDistance: .infinity) { pressing in
+                handlePressChange(pressing)
+            } perform: {}
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        handleDragChanged(value)
+                    }
+                    .onEnded { value in
+                        handleDragEnded(value)
+                    }
+            )
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isDragging)
+            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: position)
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var pipSize: CGSize {
+        CGSize(width: 100, height: 130)
+    }
+    
+    private var pipScale: CGFloat {
+        if isDragging { return 1.1 }
+        if isPressed { return 0.95 }
+        return isVisible ? 1.0 : 0.8
+    }
+    
+    private var pipOpacity: Double {
+        isVisible ? 1.0 : 0.0
+    }
+    
+    private var pipBorderColor: Color {
+        if isDragging { return DesignTokens.BrandColors.primary }
+        if isPressed { return DesignTokens.BrandColors.primaryVariant }
+        return DesignTokens.BackgroundColors.primary
+    }
+    
+    private var pipBorderWidth: CGFloat {
+        if isDragging { return 4 }
+        if isPressed { return 3 }
+        return 3
+    }
+    
+    private var pipShadowColor: Color {
+        if isDragging { return DesignTokens.BrandColors.primary.opacity(0.3) }
+        return DesignTokens.Shadows.md.color
+    }
+    
+    private var pipShadowRadius: CGFloat {
+        isDragging ? 12 : DesignTokens.Shadows.md.radius
+    }
+    
+    private var pipShadowY: CGFloat {
+        isDragging ? 6 : DesignTokens.Shadows.md.y
+    }
+    
+    private var accessibilityLabel: String {
+        "Picture-in-picture image in \(position.accessibilityLabel)"
+    }
+    
+    // MARK: - Interaction Handlers
+    
+    private func handleTap() {
+        HapticManager.selection()
+        onTap()
+    }
+    
+    private func handleDoubleTap() {
+        HapticManager.mediumTap()
+        onDoubleTap()
+    }
+    
+    private func handlePressChange(_ pressing: Bool) {
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+            isPressed = pressing
+        }
+        
+        if pressing {
+            HapticManager.lightTap()
+        }
+    }
+    
+    private func handleDragChanged(_ value: DragGesture.Value) {
+        if !isDragging {
+            isDragging = true
+            lastDragPosition = value.startLocation
+        }
+        
+        dragOffset = value.translation
+    }
+    
+    private func handleDragEnded(_ value: DragGesture.Value) {
+        let finalLocation = CGPoint(
+            x: lastDragPosition.x + value.translation.width,
+            y: lastDragPosition.y + value.translation.height
+        )
+        
+        // Determine new position based on drag location
+        let newPosition = determinePosition(from: finalLocation)
+        
+        if newPosition != position {
+            HapticManager.success()
+            position = newPosition
+        }
+        
+        // Reset drag state
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isDragging = false
+            dragOffset = .zero
+        }
+    }
+    
+    private func determinePosition(from location: CGPoint) -> PIPPosition {
+        // Simple quadrant-based positioning
+        // You could make this more sophisticated based on screen bounds
+        let isLeft = location.x < 200 // Rough center point
+        let isTop = location.y < 200
+        
+        switch (isLeft, isTop) {
+        case (true, true): return .topLeading
+        case (false, true): return .topTrailing
+        case (true, false): return .bottomLeading
+        case (false, false): return .bottomTrailing
+        }
+    }
+}
+
+// MARK: - PIP Position Enum
+
+/// Positions for the Picture-in-Picture overlay
+enum PIPPosition: CaseIterable {
+    case topLeading
+    case topTrailing  
+    case bottomLeading
+    case bottomTrailing
+    
+    var alignment: Alignment {
+        switch self {
+        case .topLeading: return .topLeading
+        case .topTrailing: return .topTrailing
+        case .bottomLeading: return .bottomLeading
+        case .bottomTrailing: return .bottomTrailing
+        }
+    }
+    
+    var accessibilityLabel: String {
+        switch self {
+        case .topLeading: return "Top left corner"
+        case .topTrailing: return "Top right corner" 
+        case .bottomLeading: return "Bottom left corner"
+        case .bottomTrailing: return "Bottom right corner"
         }
     }
 }
