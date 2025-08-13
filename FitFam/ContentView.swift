@@ -15,6 +15,9 @@ import SwiftUI
 struct ContentView: View {
     // MARK: - Properties
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var showExercisePrompt = false
+    @State private var hasShownExercisePrompt = false
+    @State private var selectedTab = 0
     
     // MARK: - Body
     var body: some View {
@@ -24,7 +27,7 @@ struct ContentView: View {
                     OnboardingView()
                         .environmentObject(authViewModel)
                 } else {
-                    MainTabView()
+                    MainTabView(selectedTab: $selectedTab)
                         .environmentObject(authViewModel)
                 }
             } else {
@@ -42,6 +45,41 @@ struct ContentView: View {
         .onChange(of: authViewModel.currentUser?.isOnboarded) { _, newValue in
             print("🔄 User isOnboarded changed to: \(newValue ?? false)")
         }
+        .onChange(of: authViewModel.isAuthenticated) { _, isAuthenticated in
+            // Show exercise prompt once per cold app launch when user becomes authenticated
+            // and doesn't need onboarding
+            if isAuthenticated && !authViewModel.needsOnboarding && !hasShownExercisePrompt {
+                showExercisePrompt = true
+                hasShownExercisePrompt = true
+            }
+        }
+        .fullScreenCover(isPresented: $showExercisePrompt) {
+            ExercisePromptModalView { response in
+                handleExercisePromptResponse(response)
+            }
+        }
+    }
+    
+    // MARK: - Exercise Prompt Response Handler
+    
+    private func handleExercisePromptResponse(_ response: ExercisePromptResponse) {
+        showExercisePrompt = false
+        
+        switch response {
+        case .yes:
+            // Navigate to camera for workout check-in
+            selectedTab = 2
+            
+        case .restDay:
+            // Navigate to camera with rest day mode (same as regular for now)
+            selectedTab = 2
+            
+        case .no:
+            // Dismiss and land on Home feed
+            selectedTab = 0
+        }
+        
+        HapticManager.success()
     }
 }
 
@@ -51,7 +89,7 @@ struct ContentView: View {
 struct MainTabView: View {
     // MARK: - Properties
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var selectedTab = 0              // Currently selected tab index
+    @Binding var selectedTab: Int                   // Currently selected tab index
     
     // MARK: - Body
     var body: some View {
@@ -136,5 +174,10 @@ struct MainTabView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(AuthViewModel())
+}
+
+#Preview("Main Tab View") {
+    MainTabView(selectedTab: .constant(0))
         .environmentObject(AuthViewModel())
 }
