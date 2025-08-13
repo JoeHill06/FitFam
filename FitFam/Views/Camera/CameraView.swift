@@ -63,11 +63,12 @@ struct PostComposerView: View {
     @State private var caption = ""
     @State private var isPosting = false
     @State private var showLocationPicker = false
+    @State private var isVisible = false
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: DesignTokens.Spacing.xl) {
                     // Image preview
                     imagePreviewSection
                     
@@ -77,28 +78,48 @@ struct PostComposerView: View {
                     // Location and visibility options
                     optionsSection
                     
-                    Spacer(minLength: 100)
+                    Spacer(minLength: DesignTokens.Spacing.xl4)
                 }
-                .padding()
+                .padding(.horizontal, DesignTokens.Spacing.lg)
+                .padding(.top, DesignTokens.Spacing.md)
             }
+            .tokenBackground(DesignTokens.BackgroundColors.primary)
             .navigationTitle("New Post")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(DesignTokens.BackgroundColors.secondary, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        onDismiss()
+                    TextButton("Cancel", color: DesignTokens.TextColors.secondary) {
+                        HapticManager.lightTap()
+                        dismissWithAnimation()
                     }
+                    .accessibilityLabel("Cancel post creation")
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Post") {
-                        Task {
-                            await postWorkout()
+                    if isPosting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: DesignTokens.BrandColors.primary))
+                            .scaleEffect(0.8)
+                    } else {
+                        TextButton("Post", color: DesignTokens.BrandColors.primary) {
+                            HapticManager.mediumTap()
+                            Task {
+                                await postWorkout()
+                            }
                         }
+                        .disabled(caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityLabel("Share workout post")
+                        .accessibilityHint("Publishes your workout to the feed")
                     }
-                    .disabled(isPosting)
-                    .fontWeight(.semibold)
                 }
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3)) {
+                isVisible = true
             }
         }
     }
@@ -106,29 +127,68 @@ struct PostComposerView: View {
     // MARK: - Image Preview
     
     private var imagePreviewSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignTokens.Spacing.md) {
             if let backImage = backImage {
-                // Main back camera image
-                Image(uiImage: backImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 300)
-                    .clipped()
-                    .cornerRadius(12)
-                
-                // Front camera image (smaller)
-                if let frontImage = frontImage {
-                    HStack {
+                // Main back camera image with enhanced styling
+                ZStack(alignment: .topLeading) {
+                    Image(uiImage: backImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 400)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                        .cornerRadius(DesignTokens.BorderRadius.lg)
+                        .shadow(
+                            color: DesignTokens.Shadows.md.color,
+                            radius: DesignTokens.Shadows.md.radius,
+                            x: DesignTokens.Shadows.md.x,
+                            y: DesignTokens.Shadows.md.y
+                        )
+                    
+                    // Front camera image overlay (BeReal style)
+                    if let frontImage = frontImage {
                         Image(uiImage: frontImage)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 80, height: 100)
+                            .frame(width: 100, height: 130)
                             .clipped()
-                            .cornerRadius(8)
-                        
-                        Spacer()
+                            .cornerRadius(DesignTokens.BorderRadius.md)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
+                                    .stroke(DesignTokens.BackgroundColors.primary, lineWidth: 3)
+                            )
+                            .shadow(
+                                color: DesignTokens.Shadows.sm.color,
+                                radius: DesignTokens.Shadows.sm.radius,
+                                x: DesignTokens.Shadows.sm.x,
+                                y: DesignTokens.Shadows.sm.y
+                            )
+                            .padding(.top, DesignTokens.Spacing.lg)
+                            .padding(.leading, DesignTokens.Spacing.lg)
+                            .scaleEffect(isVisible ? 1.0 : 0.8)
+                            .opacity(isVisible ? 1.0 : 0.0)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isVisible)
                     }
                 }
+                .scaleEffect(isVisible ? 1.0 : 0.95)
+                .opacity(isVisible ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.4), value: isVisible)
+            } else {
+                // Placeholder if no images
+                Rectangle()
+                    .fill(DesignTokens.BackgroundColors.secondary)
+                    .frame(height: 400)
+                    .cornerRadius(DesignTokens.BorderRadius.lg)
+                    .overlay(
+                        VStack(spacing: DesignTokens.Spacing.md) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 48))
+                                .foregroundColor(DesignTokens.TextColors.tertiary)
+                            Text("No image captured")
+                                .font(DesignTokens.Typography.Styles.body)
+                                .foregroundColor(DesignTokens.TextColors.secondary)
+                        }
+                    )
             }
         }
     }
@@ -136,57 +196,109 @@ struct PostComposerView: View {
     // MARK: - Caption Section
     
     private var captionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
             Text("Caption")
-                .font(.headline)
+                .font(DesignTokens.Typography.Styles.headline)
+                .foregroundColor(DesignTokens.TextColors.primary)
+                .offset(y: isVisible ? 0 : 10)
+                .opacity(isVisible ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.4).delay(0.2), value: isVisible)
             
-            TextField("How was your workout?", text: $caption, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(3...6)
+            VStack(spacing: DesignTokens.Spacing.xs) {
+                TextField("How was your workout?", text: $caption, axis: .vertical)
+                    .font(DesignTokens.Typography.Styles.body)
+                    .padding(DesignTokens.Spacing.md)
+                    .background(DesignTokens.BackgroundColors.secondary)
+                    .cornerRadius(DesignTokens.BorderRadius.md)
+                    .foregroundColor(DesignTokens.TextColors.primary)
+                    .tint(DesignTokens.BrandColors.primary)
+                    .lineLimit(3...8)
+                    .accessibilityLabel("Workout caption")
+                    .accessibilityHint("Describe your workout experience")
+                
+                HStack {
+                    Spacer()
+                    Text("\(caption.count)/280")
+                        .font(DesignTokens.Typography.Styles.footnote)
+                        .foregroundColor(
+                            caption.count > 280 ? DesignTokens.SemanticColors.error : DesignTokens.TextColors.tertiary
+                        )
+                        .animation(DesignTokens.Animation.fast, value: caption.count)
+                }
+            }
+            .offset(y: isVisible ? 0 : 20)
+            .opacity(isVisible ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.4).delay(0.3), value: isVisible)
         }
     }
     
     // MARK: - Options Section
     
     private var optionsSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignTokens.Spacing.md) {
             // Location toggle
             HStack {
                 Image(systemName: "location.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(DesignTokens.SemanticColors.info)
+                    .font(.system(size: 20))
                 
-                Text("Add Location")
-                    .font(.body)
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                    Text("Add Location")
+                        .font(DesignTokens.Typography.Styles.bodyMedium)
+                        .foregroundColor(DesignTokens.TextColors.primary)
+                    Text("Share where you worked out")
+                        .font(DesignTokens.Typography.Styles.caption1)
+                        .foregroundColor(DesignTokens.TextColors.secondary)
+                }
                 
                 Spacer()
                 
-                Button("Add") {
+                TextButton("Add", color: DesignTokens.BrandColors.primary) {
+                    HapticManager.lightTap()
                     showLocationPicker = true
                 }
-                .font(.caption)
-                .foregroundColor(.blue)
+                .accessibilityLabel("Add workout location")
             }
-            .padding()
-            .background(Color.secondary.opacity(0.1))
-            .cornerRadius(8)
+            .padding(DesignTokens.Spacing.md)
+            .tokenSurface(
+                backgroundColor: DesignTokens.BackgroundColors.secondary,
+                cornerRadius: DesignTokens.BorderRadius.md,
+                shadow: DesignTokens.Shadows.sm
+            )
+            .offset(y: isVisible ? 0 : 30)
+            .opacity(isVisible ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.4).delay(0.4), value: isVisible)
             
             // Visibility setting
             HStack {
                 Image(systemName: "person.3.fill")
-                    .foregroundColor(.green)
+                    .foregroundColor(DesignTokens.SemanticColors.success)
+                    .font(.system(size: 20))
                 
-                Text("Visible to Friends")
-                    .font(.body)
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                    Text("Visible to Friends")
+                        .font(DesignTokens.Typography.Styles.bodyMedium)
+                        .foregroundColor(DesignTokens.TextColors.primary)
+                    Text("Only your friends can see this post")
+                        .font(DesignTokens.Typography.Styles.caption1)
+                        .foregroundColor(DesignTokens.TextColors.secondary)
+                }
                 
                 Spacer()
                 
-                Text("Friends Only")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(DesignTokens.SemanticColors.success)
+                    .font(.system(size: 18))
             }
-            .padding()
-            .background(Color.secondary.opacity(0.1))
-            .cornerRadius(8)
+            .padding(DesignTokens.Spacing.md)
+            .tokenSurface(
+                backgroundColor: DesignTokens.BackgroundColors.secondary,
+                cornerRadius: DesignTokens.BorderRadius.md,
+                shadow: DesignTokens.Shadows.sm
+            )
+            .offset(y: isVisible ? 0 : 40)
+            .opacity(isVisible ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.4).delay(0.5), value: isVisible)
         }
     }
     
@@ -211,10 +323,22 @@ struct PostComposerView: View {
         
         await MainActor.run {
             isPosting = false
-            onDismiss()
+            HapticManager.success()
+            dismissWithAnimation()
         }
         
         print("📤 Posted workout with caption: \(caption)")
+    }
+    
+    /// Dismisses the view with smooth animation
+    private func dismissWithAnimation() {
+        withAnimation(.easeIn(duration: 0.25)) {
+            isVisible = false
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            onDismiss()
+        }
     }
 }
 
