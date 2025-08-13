@@ -548,12 +548,6 @@ class CameraService: NSObject, ObservableObject {
             let backPreviewConnection = AVCaptureConnection(inputPort: backVideoPort, videoPreviewLayer: backLayer)
             if captureSession.canAddConnection(backPreviewConnection) {
                 captureSession.addConnection(backPreviewConnection)
-                
-                // Fix orientation for back camera
-                if backPreviewConnection.isVideoOrientationSupported {
-                    backPreviewConnection.videoOrientation = .portrait
-                }
-                
                 print("✅ Back camera preview connection added")
             }
         }
@@ -677,11 +671,6 @@ class CameraService: NSObject, ObservableObject {
         // Fallback creation if not pre-created
         let layer = AVCaptureVideoPreviewLayer(session: captureSession)
         layer.videoGravity = .resizeAspectFill
-        
-        // Fix orientation for back camera
-        if let connection = layer.connection, connection.isVideoOrientationSupported {
-            connection.videoOrientation = .portrait
-        }
         
         backPreviewLayer = layer
         print("📱 Back camera preview layer created (fallback)")
@@ -832,9 +821,9 @@ class CameraService: NSObject, ObservableObject {
             
             for await (image, isFront) in group {
                 if isFront {
-                    frontImage = image?.fixedFrontCameraOrientation()
+                    frontImage = image
                 } else {
-                    backImage = image?.fixedBackCameraOrientation()
+                    backImage = image
                 }
             }
             
@@ -845,7 +834,7 @@ class CameraService: NSObject, ObservableObject {
     /// Fallback single camera capture
     private func captureSinglePhoto() async -> (frontImage: UIImage?, backImage: UIImage?) {
         let backImage = await capturePhotoFromOutput(backPhotoOutput, settings: AVCapturePhotoSettings())
-        return (nil, backImage?.fixedBackCameraOrientation())
+        return (nil, backImage)
     }
     
     /// Helper to capture photo from specific output
@@ -874,65 +863,6 @@ extension Array {
     }
 }
 
-extension UIImage {
-    /// Fix orientation for front camera images that appear upside down
-    func fixedFrontCameraOrientation() -> UIImage {
-        // Manually rotate the image 180 degrees using Core Graphics
-        guard let cgImage = self.cgImage else { return self }
-        
-        let width = cgImage.width
-        let height = cgImage.height
-        
-        guard let colorSpace = cgImage.colorSpace,
-              let context = CGContext(data: nil,
-                                    width: width,
-                                    height: height,
-                                    bitsPerComponent: cgImage.bitsPerComponent,
-                                    bytesPerRow: 0,
-                                    space: colorSpace,
-                                    bitmapInfo: cgImage.bitmapInfo.rawValue) else {
-            return self
-        }
-        
-        // Rotate 180 degrees
-        context.translateBy(x: CGFloat(width), y: CGFloat(height))
-        context.rotate(by: .pi)
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-        
-        guard let rotatedCGImage = context.makeImage() else { return self }
-        
-        return UIImage(cgImage: rotatedCGImage, scale: self.scale, orientation: .up)
-    }
-    
-    /// Fix orientation for back camera images that appear upside down
-    func fixedBackCameraOrientation() -> UIImage {
-        // Manually rotate the image 180 degrees using Core Graphics
-        guard let cgImage = self.cgImage else { return self }
-        
-        let width = cgImage.width
-        let height = cgImage.height
-        
-        guard let colorSpace = cgImage.colorSpace,
-              let context = CGContext(data: nil,
-                                    width: width,
-                                    height: height,
-                                    bitsPerComponent: cgImage.bitsPerComponent,
-                                    bytesPerRow: 0,
-                                    space: colorSpace,
-                                    bitmapInfo: cgImage.bitmapInfo.rawValue) else {
-            return self
-        }
-        
-        // Rotate 180 degrees
-        context.translateBy(x: CGFloat(width), y: CGFloat(height))
-        context.rotate(by: .pi)
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-        
-        guard let rotatedCGImage = context.makeImage() else { return self }
-        
-        return UIImage(cgImage: rotatedCGImage, scale: self.scale, orientation: .up)
-    }
-}
 
 // MARK: - Photo Capture Delegate
 

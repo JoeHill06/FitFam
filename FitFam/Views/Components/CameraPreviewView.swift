@@ -28,27 +28,21 @@ struct CameraPreviewView: UIViewRepresentable {
         
         // Apply mirroring and orientation
         if let connection = previewLayer.connection {
-            // Handle mirroring - flip both cameras horizontally
+            // Handle mirroring properly
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
                 if isMirrored {
-                    // Front camera - flip horizontally (opposite of before)
-                    connection.isVideoMirrored = false
-                } else {
-                    // Back camera - flip horizontally too
+                    // Front camera - mirror for selfie effect
                     connection.isVideoMirrored = true
+                } else {
+                    // Back camera - no mirroring
+                    connection.isVideoMirrored = false
                 }
             }
             
-            // Fix orientation - flip both cameras vertically
+            // Set proper orientation
             if connection.isVideoOrientationSupported {
-                if isMirrored {
-                    // Front camera - flip vertically (opposite of before)
-                    connection.videoOrientation = .portrait
-                } else {
-                    // Back camera - flip vertically too
-                    connection.videoOrientation = .portrait
-                }
+                connection.videoOrientation = .portrait
             }
         }
         
