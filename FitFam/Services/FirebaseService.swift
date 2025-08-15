@@ -183,7 +183,10 @@ class FirebaseService: ObservableObject {
     // MARK: - Post Operations
     
     func createPost(_ post: Post, withId postId: String) async throws {
+        print("🔥 FirebaseService.createPost() - Saving to posts/\(postId)")
+        print("🔥 Post data: userID=\(post.userID), postType=\(post.postType.rawValue)")
         try db.collection("posts").document(postId).setData(from: post)
+        print("✅ Successfully saved to posts collection")
     }
     
     // MARK: - Real-time Listeners

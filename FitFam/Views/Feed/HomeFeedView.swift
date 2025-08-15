@@ -52,17 +52,33 @@ struct HomeFeedView: View {
                     
                     Spacer()
                     
-                    // Add contacts button
-                    Button(action: {
-                        HapticManager.selection()
-                        showContactsView = true
-                    }) {
-                        Image(systemName: "person.badge.plus")
-                            .font(.title2)
-                            .foregroundColor(DesignTokens.BrandColors.primary)
+                    HStack(spacing: 12) {
+                        // Refresh button for debugging
+                        Button(action: {
+                            HapticManager.selection()
+                            Task {
+                                await feedViewModel.refreshFeed()
+                            }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.title2)
+                                .foregroundColor(DesignTokens.BrandColors.primary)
+                        }
+                        .frame(minWidth: DesignTokens.Accessibility.recommendedTapTarget, minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                        .contentShape(Rectangle())
+                        
+                        // Add contacts button
+                        Button(action: {
+                            HapticManager.selection()
+                            showContactsView = true
+                        }) {
+                            Image(systemName: "person.badge.plus")
+                                .font(.title2)
+                                .foregroundColor(DesignTokens.BrandColors.primary)
+                        }
+                        .frame(minWidth: DesignTokens.Accessibility.recommendedTapTarget, minHeight: DesignTokens.Accessibility.recommendedTapTarget)
+                        .contentShape(Rectangle())
                     }
-                    .frame(minWidth: DesignTokens.Accessibility.recommendedTapTarget, minHeight: DesignTokens.Accessibility.recommendedTapTarget)
-                    .contentShape(Rectangle())
                 }
                 .padding(.horizontal, DesignTokens.Spacing.md)
                 .padding(.vertical, DesignTokens.Spacing.sm)

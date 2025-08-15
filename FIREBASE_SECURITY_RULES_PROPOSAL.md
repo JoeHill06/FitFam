@@ -48,10 +48,40 @@ service cloud.firestore {
              data.userID is string &&
              data.username is string &&
              data.postType in ['workout', 'achievement', 'checkIn', 'progress', 'motivation', 'challenge'] &&
-             data.timestamp is timestamp &&
+             (data.timestamp is timestamp || data.timestamp is string) &&  // Allow both timestamp and string formats
              (data.content == null || (data.content is string && data.content.size() <= 280)) &&
              (data.backImageUrl == null || data.backImageUrl is string) &&
-             (data.frontImageUrl == null || data.frontImageUrl is string);
+             (data.frontImageUrl == null || data.frontImageUrl is string) &&
+             (data.primaryCamera == null || data.primaryCamera is string) &&
+             (data.visibility == null || data.visibility is string) &&
+             (data.userAvatarURL == null || data.userAvatarURL is string) &&
+             (data.mediaURL == null || data.mediaURL is string) &&
+             (data.cheerCount == null || data.cheerCount is int) &&
+             (data.commentCount == null || data.commentCount is int) &&
+             (data.workoutData == null || validateWorkoutData(data.workoutData)) &&
+             (data.location == null || validateLocation(data.location));
+    }
+    
+    function validateWorkoutData(workoutData) {
+      return workoutData is map &&
+             workoutData.keys().hasAll(['activityType']) &&
+             workoutData.activityType is string &&
+             workoutData.activityType in ['running', 'cycling', 'swimming', 'gym', 'yoga', 'hiking', 'walking', 'basketball', 'soccer', 'tennis', 'other'] &&
+             (workoutData.duration == null || workoutData.duration is number) &&
+             (workoutData.distance == null || workoutData.distance is number) &&
+             (workoutData.calories == null || workoutData.calories is int) &&
+             (workoutData.intensity == null || workoutData.intensity is int);
+    }
+    
+    function validateLocation(location) {
+      return location is map &&
+             location.keys().hasAll(['latitude', 'longitude']) &&
+             location.latitude is number &&
+             location.longitude is number &&
+             location.latitude >= -90 && location.latitude <= 90 &&
+             location.longitude >= -180 && location.longitude <= 180 &&
+             (location.name == null || location.name is string) &&
+             (location.address == null || location.address is string);
     }
   }
 }

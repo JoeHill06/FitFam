@@ -537,8 +537,10 @@ struct PostComposerView: View {
             )
             
             // 4. Save to Firestore
+            print("🚀 CameraView.postWorkout() - About to save post with ID: \(postId)")
             let firebaseService = FirebaseService()
             try await firebaseService.createPost(post, withId: postId)
+            print("✅ CameraView.postWorkout() - Post saved successfully!")
             
             await MainActor.run {
                 isPosting = false

@@ -28,8 +28,9 @@ class FeedViewModel: ObservableObject {
     
     // MARK: - Initializer
     init() {
-        // Start with mock data for development and offline functionality
-        posts = Post.mockPosts
+        // Start with empty posts array - let real data load first
+        posts = []
+        print("🔄 FeedViewModel initialized - starting with empty posts array")
     }
     
     // MARK: - Public Methods
@@ -40,41 +41,84 @@ class FeedViewModel: ObservableObject {
         isLoading = true
         
         // Set up real-time listener for posts
+        print("🔄 FeedViewModel.loadInitialPosts() - Setting up Firestore listener")
         listener = db.collection("posts")
             .order(by: "timestamp", descending: true)
             .limit(to: postsPerPage)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
+                print("📡 Firestore snapshot received")
                 
                 if let error = error {
+                    print("❌ Firestore error: \(error.localizedDescription)")
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
-                    // Fallback to mock data if Firebase fails
+                    // Only use mock data if we have no existing real posts
                     if self.posts.isEmpty {
+                        print("⚠️ Firebase error, showing mock data: \(error.localizedDescription)")
                         self.posts = Post.mockPosts
                     }
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
+                    print("📝 No snapshot documents found")
                     self.isLoading = false
-                    // Fallback to mock data if no documents
+                    // Only show mock data if truly no documents found
                     if self.posts.isEmpty {
+                        print("📝 No documents in posts collection, showing mock data")
                         self.posts = Post.mockPosts
                     }
                     return
                 }
                 
-                self.posts = documents.compactMap { document in
-                    try? document.data(as: Post.self)
-                }.filter { $0.id != nil }
+                print("📄 Found \(documents.count) documents in posts collection")
                 
+                // Log each document for debugging
+                for (index, document) in documents.enumerated() {
+                    let data = document.data()
+                    print("📄 Document \(index): ID=\(document.documentID)")
+                    print("   - userID: \(data["userID"] ?? "nil")")
+                    print("   - username: \(data["username"] ?? "nil")")
+                    print("   - postType: \(data["postType"] ?? "nil")")
+                    print("   - timestamp: \(data["timestamp"] ?? "nil")")
+                    print("   - backImageUrl: \(data["backImageUrl"] ?? "nil")")
+                    print("   - frontImageUrl: \(data["frontImageUrl"] ?? "nil")")
+                }
+                
+                let decodedPosts = documents.compactMap { document -> Post? in
+                    do {
+                        let post = try document.data(as: Post.self)
+                        print("✅ Successfully decoded post: \(post.username) - \(post.postType.rawValue)")
+                        return post
+                    } catch {
+                        print("❌ Failed to decode post \(document.documentID): \(error)")
+                        return nil
+                    }
+                }.filter { post in
+                    let hasId = post.id != nil
+                    if !hasId {
+                        print("⚠️ Post missing ID: \(post.username)")
+                    }
+                    return hasId
+                }
+                
+                print("🔄 Decoded \(decodedPosts.count) valid posts")
+                self.posts = decodedPosts
                 self.lastDocument = documents.last
                 self.isLoading = false
                 
-                // If no posts from Firebase, use mock data for development
-                if self.posts.isEmpty {
+                // Smart fallback: Only use mock data if no real posts AND no errors
+                if self.posts.isEmpty && self.errorMessage == nil {
+                    print("📝 No real posts found after processing, showing mock data for development")
                     self.posts = Post.mockPosts
+                } else if !self.posts.isEmpty {
+                    print("✅ Loaded \(self.posts.count) real posts from Firebase")
+                    // Log first post for verification
+                    if let firstPost = self.posts.first {
+                        let timeStr = firstPost.timestamp.description
+                        print("🎯 First post: \(firstPost.username) posted \(firstPost.postType.rawValue) at \(timeStr)")
+                    }
                 }
             }
     }
