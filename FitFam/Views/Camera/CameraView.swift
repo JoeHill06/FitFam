@@ -75,7 +75,6 @@ struct PostComposerView: View {
     @State private var showCaptionOverlay = false
     
     // MARK: - Activity Selection State
-    @State private var selectedActivity: ActivityType?
     @State private var showActivityPicker = false
     
     // MARK: - Upload State
@@ -110,12 +109,17 @@ struct PostComposerView: View {
                 isVisible = true
             }
         }
-        .sheet(isPresented: $showActivityPicker) {
-            ActivityPickerView(
-                selectedActivity: $selectedActivity,
-                isPresented: $showActivityPicker,
-                onActivitySelected: { activity in
-                    selectedActivity = activity
+        .fullScreenCover(isPresented: $showActivityPicker) {
+            ActivityComposeView(
+                frontImage: frontImage,
+                backImage: backImage,
+                onDismiss: {
+                    showActivityPicker = false
+                },
+                onPost: { activity, caption, includeLocation in
+                    Task {
+                        await postWorkout(activity: activity, caption: caption, includeLocation: includeLocation)
+                    }
                 }
             )
         }
@@ -208,39 +212,6 @@ struct PostComposerView: View {
             .accessibilityLabel("Cancel post creation")
             
             Spacer()
-            
-            // Post button
-            Button(action: {
-                HapticManager.mediumTap()
-                Task {
-                    await postWorkout()
-                }
-            }) {
-                HStack(spacing: DesignTokens.Spacing.xs) {
-                    if isPosting {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Post")
-                            .font(DesignTokens.Typography.Styles.body)
-                            .fontWeight(.semibold)
-                    }
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, DesignTokens.Spacing.md)
-                .padding(.vertical, DesignTokens.Spacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.lg)
-                        .fill(DesignTokens.BrandColors.primary)
-                )
-            }
-            .disabled(caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedActivity == nil || isPosting)
-            .opacity((caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedActivity == nil) ? 0.6 : 1.0)
-            .accessibilityLabel("Share workout post")
-            .accessibilityHint("Publishes your workout to the feed")
         }
         .padding(.horizontal, DesignTokens.Spacing.lg)
         .padding(.top, 60) // Account for status bar
@@ -252,8 +223,8 @@ struct PostComposerView: View {
     // MARK: - Bottom Panel
     
     private var bottomPanel: some View {
-        VStack(spacing: 0) {
-            // Caption toggle button
+        VStack(spacing: DesignTokens.Spacing.md) {
+            // Caption toggle button (optional)
             HStack {
                 Spacer()
                 Button(action: {
@@ -280,12 +251,11 @@ struct PostComposerView: View {
                 }
                 Spacer()
             }
-            .padding(.bottom, DesignTokens.Spacing.sm)
             .offset(y: isVisible ? 0 : 20)
             .opacity(isVisible ? 1.0 : 0.0)
             .animation(.easeOut(duration: 0.4).delay(0.3), value: isVisible)
             
-            // Caption input panel
+            // Caption input panel (when shown)
             if showCaptionOverlay {
                 captionInputPanel
                     .transition(.asymmetric(
@@ -293,6 +263,12 @@ struct PostComposerView: View {
                         removal: .move(edge: .bottom).combined(with: .opacity)
                     ))
             }
+            
+            // Main Select Activity Button (always visible at bottom)
+            selectActivityButton
+                .offset(y: isVisible ? 0 : 30)
+                .opacity(isVisible ? 1.0 : 0.0)
+                .animation(.easeOut(duration: 0.4).delay(0.5), value: isVisible)
         }
         .padding(.horizontal, DesignTokens.Spacing.lg)
         .padding(.bottom, 34) // Account for home indicator
@@ -329,49 +305,6 @@ struct PostComposerView: View {
                 }
             }
             
-            // Activity selection button
-            Button(action: {
-                HapticManager.lightTap()
-                showActivityPicker = true
-            }) {
-                HStack {
-                    Image(systemName: "figure.run")
-                        .foregroundColor(DesignTokens.BrandColors.primary)
-                        .font(.system(size: 16))
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Activity Type")
-                            .font(DesignTokens.Typography.Styles.footnote)
-                            .foregroundColor(.white.opacity(0.7))
-                        
-                        if let selectedActivity = selectedActivity {
-                            Text("\(selectedActivity.icon) \(selectedActivity.displayName)")
-                                .font(DesignTokens.Typography.Styles.body)
-                                .foregroundColor(.white)
-                        } else {
-                            Text("Select Activity")
-                                .font(DesignTokens.Typography.Styles.body)
-                                .foregroundColor(DesignTokens.BrandColors.primary)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.white.opacity(0.5))
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .padding(DesignTokens.Spacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
-                        .fill(.black.opacity(0.4))
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.md)
-                                .stroke(selectedActivity == nil ? DesignTokens.BrandColors.primary.opacity(0.5) : .clear, lineWidth: 1)
-                        )
-                )
-            }
             
             // Quick location toggle
             HStack {
@@ -396,6 +329,57 @@ struct PostComposerView: View {
             )
         }
         .padding(.top, DesignTokens.Spacing.md)
+    }
+    
+    // MARK: - Select Activity Button
+    
+    private var selectActivityButton: some View {
+        Button(action: {
+            print("🎯 Select Activity button tapped")
+            HapticManager.mediumTap()
+            showActivityPicker = true
+        }) {
+            HStack(spacing: DesignTokens.Spacing.md) {
+                Image(systemName: "figure.run")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(.white)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Select Activity")
+                        .font(DesignTokens.Typography.Styles.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                    
+                    Text("Choose your workout type")
+                        .font(DesignTokens.Typography.Styles.body)
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            .padding(.horizontal, DesignTokens.Spacing.lg)
+            .padding(.vertical, DesignTokens.Spacing.lg)
+            .frame(minHeight: 56) // Minimum touch target
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.lg)
+                    .fill(DesignTokens.BrandColors.primary)
+                    .shadow(
+                        color: DesignTokens.BrandColors.primary.opacity(0.3),
+                        radius: 8,
+                        x: 0,
+                        y: 4
+                    )
+            )
+        }
+        .accessibilityLabel("Select workout activity")
+        .accessibilityHint("Tap to choose what type of workout you did")
+        .onAppear {
+            print("🎯 Select Activity button rendered")
+        }
     }
     
     // MARK: - Upload Progress Overlay
@@ -498,11 +482,10 @@ struct PostComposerView: View {
     // MARK: - Post Logic
     
     /// Upload images and create workout post
-    private func postWorkout() async {
+    private func postWorkout(activity: ActivityType, caption: String, includeLocation: Bool) async {
         guard !isPosting,
               let backImage = backImage,
               let frontImage = frontImage,
-              let selectedActivity = selectedActivity,
               let currentUser = authViewModel.currentUser else { 
             return 
         }
@@ -524,14 +507,14 @@ struct PostComposerView: View {
             
             // 3. Create Post object with dual image URLs
             let workoutData = WorkoutData(
-                activityType: selectedActivity,
+                activityType: activity,
                 duration: nil,
                 distance: nil,
                 calories: nil,
                 intensity: nil
             )
             
-            let location = showLocationPicker ? Location(
+            let location = includeLocation ? Location(
                 latitude: 37.7749, // TODO: Use actual location
                 longitude: -122.4194,
                 name: "Current Location",
@@ -543,7 +526,7 @@ struct PostComposerView: View {
                 username: currentUser.username,
                 userAvatarURL: currentUser.avatarURL,
                 postType: .checkIn,
-                content: caption.trimmingCharacters(in: .whitespacesAndNewlines),
+                content: caption.isEmpty ? nil : caption,
                 workoutData: workoutData,
                 mediaURL: nil, // Keep for backward compatibility
                 location: location,
@@ -559,8 +542,9 @@ struct PostComposerView: View {
             
             await MainActor.run {
                 isPosting = false
+                showActivityPicker = false // Close activity composer
                 HapticManager.success()
-                dismissWithAnimation()
+                dismissWithAnimation() // Close post composer
             }
             
             print("✅ Posted workout successfully with dual images")

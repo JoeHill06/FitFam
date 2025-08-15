@@ -102,64 +102,6 @@ struct ActivityPickerView: View {
     }
 }
 
-// MARK: - Activity Card Component
-
-struct ActivityCard: View {
-    let activity: ActivityType
-    let isSelected: Bool
-    let onTap: () -> Void
-    
-    @State private var isPressed = false
-    
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: DesignTokens.Spacing.md) {
-                // Emoji Icon
-                Text(activity.icon)
-                    .font(.system(size: 48))
-                    .scaleEffect(isPressed ? 0.9 : 1.0)
-                
-                // Activity Name
-                Text(activity.displayName)
-                    .font(DesignTokens.Typography.Styles.bodyMedium)
-                    .fontWeight(.medium)
-                    .foregroundColor(
-                        isSelected ? DesignTokens.BrandColors.primary : DesignTokens.TextColors.primary
-                    )
-            }
-            .frame(maxWidth: .infinity, minHeight: 120)
-            .background(
-                RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.lg)
-                    .fill(
-                        isSelected ? DesignTokens.BrandColors.primary.opacity(0.1) : 
-                        (isPressed ? DesignTokens.SurfaceColors.pressed : DesignTokens.SurfaceColors.elevated)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DesignTokens.BorderRadius.lg)
-                            .stroke(
-                                isSelected ? DesignTokens.BrandColors.primary : 
-                                DesignTokens.BorderColors.primary.opacity(0.2),
-                                lineWidth: isSelected ? 2 : 1
-                            )
-                    )
-            )
-            .scaleEffect(isPressed ? 0.97 : 1.0)
-            .shadow(
-                color: isSelected ? DesignTokens.BrandColors.primary.opacity(0.3) : 
-                DesignTokens.Shadows.sm.color,
-                radius: isSelected ? 8 : DesignTokens.Shadows.sm.radius,
-                x: DesignTokens.Shadows.sm.x,
-                y: DesignTokens.Shadows.sm.y
-            )
-        }
-        .pressEvents(
-            onPress: { isPressed = true },
-            onRelease: { isPressed = false }
-        )
-        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isSelected)
-    }
-}
 
 // MARK: - Preview
 
