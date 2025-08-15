@@ -22,7 +22,7 @@ class AuthService: ObservableObject {
         
         self.user = Auth.auth().currentUser
         
-        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        _ = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
                 self?.user = user
             }

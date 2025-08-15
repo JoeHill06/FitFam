@@ -182,7 +182,7 @@ class AuthViewModel: ObservableObject {
     
     func signOut() async {
         do {
-            try await authService.signOut()
+            try authService.signOut()
             
             // Clear all state
             currentUser = nil
@@ -199,7 +199,7 @@ class AuthViewModel: ObservableObject {
     }
     
     func deleteAccount() async {
-        guard let user = currentUser else { return }
+        guard currentUser != nil else { return }
         
         do {
             try await authService.deleteAccount()

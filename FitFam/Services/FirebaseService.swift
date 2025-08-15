@@ -35,7 +35,7 @@ class FirebaseService: ObservableObject {
     // MARK: - Check-in Operations
     
     func createCheckIn(_ checkIn: WorkoutCheckIn) async throws {
-        let ref = try db.collection("checkIns").addDocument(from: checkIn)
+        _ = try db.collection("checkIns").addDocument(from: checkIn)
         
         try await db.collection("users").document(checkIn.userID).updateData([
             "totalWorkouts": FieldValue.increment(Int64(1)),
@@ -68,7 +68,7 @@ class FirebaseService: ObservableObject {
     func addReaction(to checkInID: String, emoji: String, userID: String) async throws {
         let checkInRef = db.collection("checkIns").document(checkInID)
         
-        try await db.runTransaction { transaction, errorPointer in
+        _ = try await db.runTransaction { transaction, errorPointer in
             let document: DocumentSnapshot
             do {
                 document = try transaction.getDocument(checkInRef)
@@ -178,6 +178,12 @@ class FirebaseService: ObservableObject {
     func getStreak(for userID: String) async throws -> Streak? {
         let document = try await db.collection("streaks").document(userID).getDocument()
         return try document.data(as: Streak.self)
+    }
+    
+    // MARK: - Post Operations
+    
+    func createPost(_ post: Post, withId postId: String) async throws {
+        try db.collection("checkIns").document(postId).setData(from: post)
     }
     
     // MARK: - Real-time Listeners

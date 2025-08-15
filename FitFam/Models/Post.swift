@@ -24,16 +24,22 @@ struct Post: Identifiable, Codable {
     let postType: PostType          // Type of post (workout, achievement, etc.)
     let content: String?            // Optional text content/caption
     let workoutData: WorkoutData?   // Workout-specific data if applicable
-    let mediaURL: String?           // Photo/video URL
+    let mediaURL: String?           // Photo/video URL (kept for backward compatibility)
     let location: Location?         // Check-in location data
     let timestamp: Date             // When the post was created
+    
+    // MARK: - Dual Image Support (Beer Buddy style)
+    let backImageUrl: String?       // Back camera image URL
+    let frontImageUrl: String?      // Front camera image URL  
+    let primaryCamera: String?      // "back" or "front" - which image is primary
+    let visibility: String?         // Post visibility setting
     
     // MARK: - Social Engagement
     var cheerCount: Int             // Number of cheers/likes
     var commentCount: Int           // Number of comments
     var isCheerByCurrentUser: Bool = false  // Has current user cheered this post
     
-    init(userID: String, username: String, userAvatarURL: String?, postType: PostType, content: String? = nil, workoutData: WorkoutData? = nil, mediaURL: String? = nil, location: Location? = nil) {
+    init(userID: String, username: String, userAvatarURL: String?, postType: PostType, content: String? = nil, workoutData: WorkoutData? = nil, mediaURL: String? = nil, location: Location? = nil, backImageUrl: String? = nil, frontImageUrl: String? = nil, primaryCamera: String? = nil, visibility: String? = nil) {
         self.userID = userID
         self.username = username
         self.userAvatarURL = userAvatarURL
@@ -45,6 +51,11 @@ struct Post: Identifiable, Codable {
         self.timestamp = Date()
         self.cheerCount = 0
         self.commentCount = 0
+        // New dual-image fields with nil defaults (backward compatible)
+        self.backImageUrl = backImageUrl
+        self.frontImageUrl = frontImageUrl
+        self.primaryCamera = primaryCamera
+        self.visibility = visibility
     }
 }
 

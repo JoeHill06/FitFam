@@ -839,9 +839,11 @@ class CameraService: NSObject, ObservableObject {
     
     /// Helper to capture photo from specific output
     private func capturePhotoFromOutput(_ output: AVCapturePhotoOutput, settings: AVCapturePhotoSettings) async -> UIImage? {
+        let isFrontCamera = output === frontPhotoOutput
+        
         return await withCheckedContinuation { continuation in
             var delegate: PhotoCaptureDelegate!
-            delegate = PhotoCaptureDelegate { [weak self] result in
+            delegate = PhotoCaptureDelegate(isFrontCamera: isFrontCamera) { [weak self] result in
                 self?.photoCaptureInProgress.remove(delegate)
                 continuation.resume(returning: result)
             }
@@ -849,7 +851,7 @@ class CameraService: NSObject, ObservableObject {
             // Keep strong reference during capture
             photoCaptureInProgress.insert(delegate)
             
-            print("📸 Starting photo capture with output: \(output)")
+            print("📸 Starting photo capture with output: \(output), isFrontCamera: \(isFrontCamera)")
             output.capturePhoto(with: settings, delegate: delegate)
         }
     }
@@ -868,9 +870,11 @@ extension Array {
 
 private class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let completion: (UIImage?) -> Void
+    private let isFrontCamera: Bool
     private let id = UUID()
     
-    init(completion: @escaping (UIImage?) -> Void) {
+    init(isFrontCamera: Bool, completion: @escaping (UIImage?) -> Void) {
+        self.isFrontCamera = isFrontCamera
         self.completion = completion
     }
     
@@ -899,7 +903,32 @@ private class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
             return
         }
         
-        print("✅ Photo captured successfully")
-        completion(image)
+        // Apply horizontal flip for front camera to match real-life mirror expectation
+        let finalImage = isFrontCamera ? image.horizontallyFlipped() : image
+        
+        print("✅ Photo captured successfully (front camera: \(isFrontCamera), flipped: \(isFrontCamera))")
+        completion(finalImage)
+    }
+}
+
+// MARK: - UIImage Extensions
+
+extension UIImage {
+    /// Returns a horizontally mirrored version of the image (like a mirror)
+    func horizontallyFlipped() -> UIImage {
+        // Use UIImage's built-in capability to flip horizontally
+        UIGraphicsBeginImageContextWithOptions(size, false, scale)
+        defer { UIGraphicsEndImageContext() }
+        
+        guard let context = UIGraphicsGetCurrentContext() else { return self }
+        
+        // Flip the coordinate system horizontally
+        context.translateBy(x: size.width, y: 0)
+        context.scaleBy(x: -1, y: 1)
+        
+        // Draw the image in the flipped context
+        draw(at: .zero)
+        
+        return UIGraphicsGetImageFromCurrentImageContext() ?? self
     }
 }
