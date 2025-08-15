@@ -183,7 +183,7 @@ class FirebaseService: ObservableObject {
     // MARK: - Post Operations
     
     func createPost(_ post: Post, withId postId: String) async throws {
-        try db.collection("checkIns").document(postId).setData(from: post)
+        try db.collection("posts").document(postId).setData(from: post)
     }
     
     // MARK: - Real-time Listeners
@@ -191,7 +191,7 @@ class FirebaseService: ObservableObject {
     func listenToFeedUpdates(for userIDs: [String], completion: @escaping ([WorkoutCheckIn]) -> Void) -> ListenerRegistration? {
         guard !userIDs.isEmpty else { return nil }
         
-        return db.collection("checkIns")
+        return db.collection("posts")
             .whereField("userID", in: userIDs)
             .order(by: "timestamp", descending: true)
             .limit(to: 50)

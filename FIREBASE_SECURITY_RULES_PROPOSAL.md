@@ -15,8 +15,8 @@ service cloud.firestore {
                    && validateUserData(request.resource.data);
     }
     
-    // Posts/CheckIns collection - users can create their own posts, read public posts
-    match /checkIns/{postId} {
+    // Posts collection - users can create their own posts, read public posts
+    match /posts/{postId} {
       allow read: if true; // Public posts for social feed
       allow create: if request.auth != null 
                     && request.auth.uid == request.resource.data.userID
@@ -85,8 +85,8 @@ service firebase.storage {
     
     // Helper function to check if post belongs to user
     function postBelongsToUser(postId, userId) {
-      return exists(/databases/(default)/documents/checkIns/$(postId)) &&
-             get(/databases/(default)/documents/checkIns/$(postId)).data.userID == userId;
+      return exists(/databases/(default)/documents/posts/$(postId)) &&
+             get(/databases/(default)/documents/posts/$(postId)).data.userID == userId;
     }
   }
 }
@@ -108,7 +108,7 @@ service firebase.storage {
 1. Go to Firebase Console → Authentication → Sign-in method
 2. Ensure Email/Password provider is enabled
 3. Go to Firestore Database → Data
-4. Verify collections exist: `users`, `checkIns`, `streaks`
+4. Verify collections exist: `users`, `posts`, `streaks`
 
 ## Security Features
 

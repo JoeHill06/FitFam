@@ -97,8 +97,11 @@ struct PostCardView: View {
                     .multilineTextAlignment(.leading)
             }
             
-            // Workout image (if available)
-            if let mediaURL = post.mediaURL, !mediaURL.isEmpty {
+            // Dual workout images (new format) or single image (legacy)
+            if let backImageUrl = post.backImageUrl, let frontImageUrl = post.frontImageUrl {
+                dualImageView(backImageUrl: backImageUrl, frontImageUrl: frontImageUrl, primaryCamera: post.primaryCamera)
+            } else if let mediaURL = post.mediaURL, !mediaURL.isEmpty {
+                // Legacy single image support
                 AsyncImage(url: URL(string: mediaURL)) { image in
                     image
                         .resizable()
@@ -214,6 +217,62 @@ struct PostCardView: View {
         case "orange": return .orange
         case "red": return .red
         default: return .blue
+        }
+    }
+    
+    // MARK: - Dual Image View
+    
+    @ViewBuilder
+    private func dualImageView(backImageUrl: String, frontImageUrl: String, primaryCamera: String?) -> some View {
+        let isPrimaryFront = primaryCamera == "front"
+        let primaryImageUrl = isPrimaryFront ? frontImageUrl : backImageUrl
+        let secondaryImageUrl = isPrimaryFront ? backImageUrl : frontImageUrl
+        
+        VStack(spacing: 8) {
+            // Primary (large) image
+            AsyncImage(url: URL(string: primaryImageUrl)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxHeight: 300)
+                    .clipped()
+                    .cornerRadius(12)
+            } placeholder: {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 300)
+                    .cornerRadius(12)
+                    .overlay(
+                        ProgressView()
+                    )
+            }
+            
+            // Secondary (small) image with label
+            HStack {
+                AsyncImage(url: URL(string: secondaryImageUrl)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipped()
+                        .cornerRadius(8)
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 60, height: 60)
+                        .cornerRadius(8)
+                        .overlay(
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        )
+                }
+                
+                Text(isPrimaryFront ? "📱 Front camera" : "🏃‍♂️ Back camera")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+            }
         }
     }
 }
