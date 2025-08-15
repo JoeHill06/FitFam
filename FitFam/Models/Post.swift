@@ -152,7 +152,7 @@ enum ActivityType: String, Codable, CaseIterable {
         case .hiking: return "Hiking"
         case .walking: return "Walking"
         case .basketball: return "Basketball"
-        case .soccer: return "Soccer"
+        case .soccer: return "Football"
         case .tennis: return "Tennis"
         case .other: return "Other"
         }

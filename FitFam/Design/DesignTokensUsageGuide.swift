@@ -59,7 +59,7 @@ struct ColorExamplesView: View {
         VStack(spacing: DesignTokens.Spacing.lg) {
             
             // Primary brand color usage
-            Text("Primary Brand Color")
+            Text("Primary Brand Colour")
                 .foregroundColor(DesignTokens.BrandColors.primary)
                 .font(DesignTokens.Typography.Styles.headline)
             
@@ -194,7 +194,7 @@ struct TokenSurfaceExamples: View {
                             .foregroundColor(DesignTokens.TextColors.primary)
                     }
                     
-                    Text("This is a warning message with semantic coloring.")
+                    Text("This is a warning message with semantic colouring.")
                         .font(DesignTokens.Typography.Styles.body)
                         .foregroundColor(DesignTokens.TextColors.secondary)
                 }
